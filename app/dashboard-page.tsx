@@ -24,7 +24,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
 
   const handleAddProperty = () => {
-    router.push("/properties/add")
+    router.push("/properties")
   }
 
   const handleExport = async () => {
