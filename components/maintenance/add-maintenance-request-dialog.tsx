@@ -20,6 +20,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { insertMaintenanceRequest, uploadMaintenanceImages } from "@/lib/services/maintenance"
+import { fetchProperties } from "@/lib/services/properties"
+import { fetchUnitsByProperty } from "@/lib/services/units"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,7 +40,7 @@ interface MaintenanceRequestFormData {
   images: File[]
 }
 
-export function AddMaintenanceRequestDialog() {
+export function AddMaintenanceRequestDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("details")
@@ -57,22 +61,11 @@ export function AddMaintenanceRequestDialog() {
     images: [],
   })
 
-  const properties = [
-    { id: "prop-1", name: "Sunset Towers" },
-    { id: "prop-2", name: "Ocean View Apartments" },
-    { id: "prop-3", name: "Downtown Business Center" },
-    { id: "prop-4", name: "Parkside Residences" },
-    { id: "prop-5", name: "Retail Plaza" },
-  ]
-
-  const units = [
-    { id: "unit-1", propertyId: "prop-1", name: "Apartment 301" },
-    { id: "unit-2", propertyId: "prop-1", name: "Apartment 302" },
-    { id: "unit-3", propertyId: "prop-2", name: "Unit 205" },
-    { id: "unit-4", propertyId: "prop-3", name: "Office 405" },
-    { id: "unit-5", propertyId: "prop-4", name: "Villa 12" },
-    { id: "unit-6", propertyId: "prop-5", name: "Shop 3" },
-  ]
+  const { data: properties } = useSupabaseQuery(fetchProperties)
+  const { data: units } = useSupabaseQuery(
+    () => formData.propertyId ? fetchUnitsByProperty(formData.propertyId) : Promise.resolve([]),
+    [formData.propertyId]
+  )
 
   const categories = [
     { id: "plumbing", name: t("maintenance.categories.plumbing") },
@@ -84,7 +77,7 @@ export function AddMaintenanceRequestDialog() {
     { id: "other", name: t("maintenance.categories.other") },
   ]
 
-  const filteredUnits = units.filter((unit) => unit.propertyId === formData.propertyId)
+  const filteredUnits = units
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -145,8 +138,24 @@ export function AddMaintenanceRequestDialog() {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      let imageUrls: string[] = []
+      if (formData.images.length > 0) {
+        imageUrls = await uploadMaintenanceImages(formData.images)
+      }
+
+      await insertMaintenanceRequest({
+        title: formData.title,
+        property_id: formData.propertyId,
+        unit_id: formData.unitId,
+        category: formData.category,
+        priority: formData.priority,
+        description: formData.description,
+        available_dates: formData.availableDates || null,
+        contact_preference: formData.contactPreference,
+        image_urls: imageUrls,
+      })
+
+      onSuccess?.()
 
       toast({
         title: t("maintenance.addSuccess"),
@@ -232,7 +241,7 @@ export function AddMaintenanceRequestDialog() {
                       <SelectValue placeholder={t("maintenance.selectProperty")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {properties.map((property) => (
+                      {properties.map((property: any) => (
                         <SelectItem key={property.id} value={property.id}>
                           {property.name}
                         </SelectItem>
@@ -251,7 +260,7 @@ export function AddMaintenanceRequestDialog() {
                       <SelectValue placeholder={t("maintenance.selectUnit")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredUnits.map((unit) => (
+                      {filteredUnits.map((unit: any) => (
                         <SelectItem key={unit.id} value={unit.id}>
                           {unit.name}
                         </SelectItem>

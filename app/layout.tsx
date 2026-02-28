@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <Favicon />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light">
           <LanguageProvider>{children}</LanguageProvider>
         </ThemeProvider>

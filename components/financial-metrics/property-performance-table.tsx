@@ -6,120 +6,95 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDown, Search } from "lucide-react"
-import { useState } from "react"
-
-// Mock property performance data
-const propertyPerformanceData = [
-  {
-    id: "prop-1",
-    name: "Sunset Towers",
-    type: "Residential",
-    units: 24,
-    occupancyRate: 0.92,
-    monthlyRevenue: 42500,
-    monthlyExpenses: 15200,
-    noi: 27300,
-    capRate: 0.068,
-    roi: 0.072,
-    maintenanceCost: 5800,
-    maintenanceRatio: 0.136,
-    performanceScore: 85,
-  },
-  {
-    id: "prop-2",
-    name: "Ocean View Apartments",
-    type: "Residential",
-    units: 18,
-    occupancyRate: 0.83,
-    monthlyRevenue: 36200,
-    monthlyExpenses: 13800,
-    noi: 22400,
-    capRate: 0.065,
-    roi: 0.069,
-    maintenanceCost: 4900,
-    maintenanceRatio: 0.135,
-    performanceScore: 82,
-  },
-  {
-    id: "prop-3",
-    name: "Downtown Business Center",
-    type: "Commercial",
-    units: 12,
-    occupancyRate: 0.75,
-    monthlyRevenue: 28800,
-    monthlyExpenses: 10200,
-    noi: 18600,
-    capRate: 0.078,
-    roi: 0.082,
-    maintenanceCost: 3200,
-    maintenanceRatio: 0.111,
-    performanceScore: 79,
-  },
-  {
-    id: "prop-4",
-    name: "Parkside Residences",
-    type: "Residential",
-    units: 32,
-    occupancyRate: 0.88,
-    monthlyRevenue: 52800,
-    monthlyExpenses: 19500,
-    noi: 33300,
-    capRate: 0.071,
-    roi: 0.075,
-    maintenanceCost: 7200,
-    maintenanceRatio: 0.136,
-    performanceScore: 87,
-  },
-  {
-    id: "prop-5",
-    name: "Retail Plaza",
-    type: "Commercial",
-    units: 8,
-    occupancyRate: 1.0,
-    monthlyRevenue: 32000,
-    monthlyExpenses: 11800,
-    noi: 20200,
-    capRate: 0.081,
-    roi: 0.085,
-    maintenanceCost: 2800,
-    maintenanceRatio: 0.088,
-    performanceScore: 92,
-  },
-]
+import { useState, useMemo } from "react"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
+import { fetchProperties } from "@/lib/services/properties"
+import { fetchUnits } from "@/lib/services/units"
+import { fetchInvoices } from "@/lib/services/invoices"
+import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
 
 export function PropertyPerformanceTable() {
   const { t } = useLanguage()
   const { formatCurrency, formatPercentage } = useFormatter()
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState("performanceScore")
+  const [sortBy, setSortBy] = useState("totalCollected")
   const [sortOrder, setSortOrder] = useState("desc")
 
-  // Filter properties based on search query
-  const filteredProperties = propertyPerformanceData.filter(
-    (property) =>
-      property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.type.toLowerCase().includes(searchQuery.toLowerCase()),
+  const { data: properties, loading: l1 } = useSupabaseQuery(fetchProperties)
+  const { data: units, loading: l2 } = useSupabaseQuery(fetchUnits)
+  const { data: invoices, loading: l3 } = useSupabaseQuery(fetchInvoices)
+  const { data: maintenance, loading: l4 } = useSupabaseQuery(fetchMaintenanceRequests)
+
+  const loading = l1 || l2 || l3 || l4
+
+  const performanceData = useMemo(() => {
+    return properties.map((prop: any) => {
+      const propUnits = units.filter((u: any) => u.property_id === prop.id)
+      const propInvoices = invoices.filter((inv: any) => inv.property_id === prop.id)
+      const propMaint = maintenance.filter((m: any) => m.property_id === prop.id)
+
+      const totalUnits = propUnits.length
+      const occupiedUnits = propUnits.filter((u: any) => u.status === "occupied").length
+      const occupancyRate = totalUnits > 0 ? occupiedUnits / totalUnits : 0
+
+      const totalCollected = propInvoices
+        .filter((i: any) => i.status === "paid")
+        .reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+      const totalBilled = propInvoices
+        .reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+      const totalPending = propInvoices
+        .filter((i: any) => i.status !== "paid")
+        .reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+
+      const collectionRate = propInvoices.length > 0
+        ? propInvoices.filter((i: any) => i.status === "paid").length / propInvoices.length
+        : 0
+
+      const maintenanceCount = propMaint.length
+
+      // Simple performance score: weighted average of occupancy, collection, and inverse maintenance
+      const score = Math.round(
+        (occupancyRate * 40) +
+        (collectionRate * 40) +
+        (maintenanceCount === 0 ? 20 : Math.max(0, 20 - maintenanceCount * 2))
+      )
+
+      return {
+        id: prop.id,
+        name: prop.name,
+        type: prop.type || "—",
+        units: totalUnits,
+        occupancyRate,
+        totalCollected,
+        totalPending,
+        collectionRate,
+        maintenanceCount,
+        performanceScore: Math.min(100, Math.max(0, score)),
+      }
+    })
+  }, [properties, units, invoices, maintenance])
+
+  const filteredProperties = performanceData.filter(
+    (p: any) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.type.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  // Sort properties
-  const sortedProperties = [...filteredProperties].sort((a, b) => {
-    const aValue = a[sortBy as keyof typeof a]
-    const bValue = b[sortBy as keyof typeof b]
-
+  const sortedProperties = [...filteredProperties].sort((a: any, b: any) => {
+    const aValue = a[sortBy]
+    const bValue = b[sortBy]
     if (typeof aValue === "number" && typeof bValue === "number") {
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue
     }
-
     if (typeof aValue === "string" && typeof bValue === "string") {
       return sortOrder === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
     }
-
     return 0
   })
 
-  // Handle sort change
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -129,17 +104,20 @@ export function PropertyPerformanceTable() {
     }
   }
 
-  // Get performance score badge
   const getPerformanceScoreBadge = (score: number) => {
-    if (score >= 90) {
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{score}</Badge>
-    } else if (score >= 80) {
-      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">{score}</Badge>
-    } else if (score >= 70) {
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{score}</Badge>
-    } else {
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{score}</Badge>
-    }
+    if (score >= 80) return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{score}</Badge>
+    if (score >= 60) return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">{score}</Badge>
+    if (score >= 40) return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{score}</Badge>
+    return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{score}</Badge>
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-[250px]" />
+        <Skeleton className="h-[300px] w-full" />
+      </div>
+    )
   }
 
   return (
@@ -165,21 +143,11 @@ export function PropertyPerformanceTable() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => handleSort("name")}>{t("financial.propertyName")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("occupancyRate")}>
-              {t("financial.occupancyRate")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("monthlyRevenue")}>
-              {t("financial.monthlyRevenue")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("noi")}>{t("financial.noi")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("capRate")}>{t("financial.capRate")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("roi")}>{t("financial.roi")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("maintenanceRatio")}>
-              {t("financial.maintenanceRatio")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("performanceScore")}>
-              {t("financial.performanceScore")}
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("occupancyRate")}>{t("financial.occupancyRate")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("totalCollected")}>Collected Revenue</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("collectionRate")}>Collection Rate</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("maintenanceCount")}>Maintenance</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("performanceScore")}>{t("financial.performanceScore")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -188,73 +156,37 @@ export function PropertyPerformanceTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead
-                className={sortBy === "name" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("name")}
-              >
-                {t("financial.propertyName")}
-              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>{t("financial.propertyName")}</TableHead>
               <TableHead>{t("financial.type")}</TableHead>
               <TableHead>{t("financial.units")}</TableHead>
-              <TableHead
-                className={sortBy === "occupancyRate" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("occupancyRate")}
-              >
-                {t("financial.occupancyRate")}
-              </TableHead>
-              <TableHead
-                className={sortBy === "monthlyRevenue" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("monthlyRevenue")}
-              >
-                {t("financial.monthlyRevenue")}
-              </TableHead>
-              <TableHead
-                className={sortBy === "noi" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("noi")}
-              >
-                {t("financial.noi")}
-              </TableHead>
-              <TableHead
-                className={sortBy === "capRate" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("capRate")}
-              >
-                {t("financial.capRate")}
-              </TableHead>
-              <TableHead
-                className={sortBy === "roi" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("roi")}
-              >
-                {t("financial.roi")}
-              </TableHead>
-              <TableHead
-                className={sortBy === "maintenanceRatio" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("maintenanceRatio")}
-              >
-                {t("financial.maintenanceRatio")}
-              </TableHead>
-              <TableHead
-                className={sortBy === "performanceScore" ? "cursor-pointer text-primary" : "cursor-pointer"}
-                onClick={() => handleSort("performanceScore")}
-              >
-                {t("financial.performanceScore")}
-              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("occupancyRate")}>{t("financial.occupancyRate")}</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("totalCollected")}>Collected</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("totalPending")}>Pending</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("collectionRate")}>Collection %</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("maintenanceCount")}>Maintenance</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("performanceScore")}>{t("financial.performanceScore")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedProperties.map((property) => (
-              <TableRow key={property.id}>
-                <TableCell className="font-medium">{property.name}</TableCell>
-                <TableCell>{property.type}</TableCell>
-                <TableCell>{property.units}</TableCell>
-                <TableCell>{formatPercentage(property.occupancyRate)}</TableCell>
-                <TableCell>{formatCurrency(property.monthlyRevenue)}</TableCell>
-                <TableCell>{formatCurrency(property.noi)}</TableCell>
-                <TableCell>{formatPercentage(property.capRate)}</TableCell>
-                <TableCell>{formatPercentage(property.roi)}</TableCell>
-                <TableCell>{formatPercentage(property.maintenanceRatio)}</TableCell>
-                <TableCell>{getPerformanceScoreBadge(property.performanceScore)}</TableCell>
+            {sortedProperties.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No properties found</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              sortedProperties.map((property: any) => (
+                <TableRow key={property.id}>
+                  <TableCell className="font-medium">{property.name}</TableCell>
+                  <TableCell className="capitalize">{property.type}</TableCell>
+                  <TableCell>{property.units}</TableCell>
+                  <TableCell>{formatPercentage(property.occupancyRate)}</TableCell>
+                  <TableCell>{formatCurrency(property.totalCollected)}</TableCell>
+                  <TableCell>{formatCurrency(property.totalPending)}</TableCell>
+                  <TableCell>{formatPercentage(property.collectionRate)}</TableCell>
+                  <TableCell>{property.maintenanceCount}</TableCell>
+                  <TableCell>{getPerformanceScoreBadge(property.performanceScore)}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

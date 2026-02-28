@@ -3,55 +3,54 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts"
 import { useFormatter } from "@/hooks/use-formatter"
 import { useTheme } from "next-themes"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
+import { fetchInvoices } from "@/lib/services/invoices"
+import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
 
-const data = [
-  {
-    name: "Jan",
-    income: 18000,
-    expenses: 5000,
-  },
-  {
-    name: "Feb",
-    income: 19500,
-    expenses: 4800,
-  },
-  {
-    name: "Mar",
-    income: 19000,
-    expenses: 5200,
-  },
-  {
-    name: "Apr",
-    income: 20500,
-    expenses: 5500,
-  },
-  {
-    name: "May",
-    income: 21000,
-    expenses: 4900,
-  },
-  {
-    name: "Jun",
-    income: 22000,
-    expenses: 6000,
-  },
-]
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 export function Overview() {
   const { formatCurrency } = useFormatter()
   const { theme } = useTheme()
 
-  // Modern minimalist color palette
+  const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
+  const { data: maintenance, loading: loadingMaint } = useSupabaseQuery(fetchMaintenanceRequests)
+
+  const loading = loadingInv || loadingMaint
+
+  // Build monthly data from real invoices for last 6 months
+  const now = new Date()
+  const chartData = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = d.toISOString().substring(0, 7) // "YYYY-MM"
+    const label = MONTHS[d.getMonth()]
+
+    const monthInvoices = invoices.filter((inv: any) => inv.issue_date?.substring(0, 7) === key)
+    const income = monthInvoices
+      .filter((inv: any) => inv.status === "paid")
+      .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
+
+    const maintenanceCount = maintenance.filter((m: any) => m.created_at?.substring(0, 7) === key).length
+
+    chartData.push({ name: label, income, maintenance: maintenanceCount })
+  }
+
   const colors = {
-    income: theme === "dark" ? "#60A5FA" : "#3B82F6", // Primary blue
-    expenses: theme === "dark" ? "#FB7185" : "#F43F5E", // Soft red
-    grid: theme === "dark" ? "#334155" : "#E2E8F0", // Subtle grid color
-    text: theme === "dark" ? "#94A3B8" : "#64748B", // Muted text color
+    income: theme === "dark" ? "#60A5FA" : "#3B82F6",
+    expenses: theme === "dark" ? "#FB7185" : "#F43F5E",
+    grid: theme === "dark" ? "#334155" : "#E2E8F0",
+    text: theme === "dark" ? "#94A3B8" : "#64748B",
+  }
+
+  if (loading) {
+    return <Skeleton className="w-full h-[350px]" />
   }
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
         <XAxis
           dataKey="name"
@@ -66,11 +65,13 @@ export function Overview() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `${value / 1000}k`}
+          tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : `${value}`}
           width={40}
         />
         <Tooltip
-          formatter={(value: number) => formatCurrency(value)}
+          formatter={(value: number, name: string) =>
+            name === "income" ? formatCurrency(value) : `${value} requests`
+          }
           labelFormatter={(label) => `Month: ${label}`}
           contentStyle={{
             backgroundColor: theme === "dark" ? "#1E293B" : "#FFFFFF",
@@ -83,10 +84,9 @@ export function Overview() {
         />
         <Legend
           wrapperStyle={{ paddingTop: "1rem" }}
-          formatter={(value) => <span style={{ color: colors.text }}>{value}</span>}
+          formatter={(value) => <span style={{ color: colors.text }}>{value === "income" ? "Rental Income" : "Maintenance"}</span>}
         />
-        <Bar dataKey="income" name="Rental Income" fill={colors.income} radius={[4, 4, 0, 0]} barSize={24} />
-        <Bar dataKey="expenses" name="Expenses" fill={colors.expenses} radius={[4, 4, 0, 0]} barSize={24} />
+        <Bar dataKey="income" name="income" fill={colors.income} radius={[4, 4, 0, 0]} barSize={24} />
       </BarChart>
     </ResponsiveContainer>
   )

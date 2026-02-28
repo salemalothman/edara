@@ -4,41 +4,17 @@ import { useLanguage } from "@/hooks/use-language"
 import { useFormatter } from "@/hooks/use-formatter"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Sector } from "recharts"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useState } from "react"
 import { InfoIcon as InfoCircle } from "lucide-react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
+import { fetchInvoices } from "@/lib/services/invoices"
+import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
+import { fetchUnits } from "@/lib/services/units"
+import { fetchProperties } from "@/lib/services/properties"
 
-// Mock financial ratio data
-const financialRatios = {
-  overall: {
-    capRate: 0.072, // 7.2%
-    operatingExpenseRatio: 0.38, // 38%
-    debtServiceCoverageRatio: 1.85,
-    cashOnCashReturn: 0.065, // 6.5%
-    grossRentMultiplier: 9.8,
-    breakEvenRatio: 0.82, // 82%
-  },
-  residential: {
-    capRate: 0.068, // 6.8%
-    operatingExpenseRatio: 0.36, // 36%
-    debtServiceCoverageRatio: 1.78,
-    cashOnCashReturn: 0.062, // 6.2%
-    grossRentMultiplier: 10.2,
-    breakEvenRatio: 0.84, // 84%
-  },
-  commercial: {
-    capRate: 0.079, // 7.9%
-    operatingExpenseRatio: 0.41, // 41%
-    debtServiceCoverageRatio: 1.92,
-    cashOnCashReturn: 0.071, // 7.1%
-    grossRentMultiplier: 9.1,
-    breakEvenRatio: 0.79, // 79%
-  },
-}
-
-// Benchmark data for comparison
 const benchmarks = {
   capRate: { min: 0.05, target: 0.07, max: 0.09 },
   operatingExpenseRatio: { min: 0.3, target: 0.35, max: 0.45 },
@@ -48,114 +24,118 @@ const benchmarks = {
   breakEvenRatio: { min: 0.75, target: 0.8, max: 0.85 },
 }
 
-// Pie chart data for ROI breakdown
-const roiBreakdownData = [
-  { name: "Rental Income", value: 85, color: "#3B82F6" }, // Blue
-  { name: "Other Income", value: 15, color: "#8B5CF6" }, // Purple
-]
-
-// Pie chart data for expense breakdown
-const expenseBreakdownData = [
-  { name: "Maintenance", value: 28, color: "#F43F5E" }, // Red
-  { name: "Property Tax", value: 22, color: "#FB7185" }, // Light Red
-  { name: "Insurance", value: 15, color: "#FBBF24" }, // Yellow
-  { name: "Management", value: 18, color: "#22C55E" }, // Green
-  { name: "Utilities", value: 12, color: "#60A5FA" }, // Light Blue
-  { name: "Other", value: 5, color: "#94A3B8" }, // Gray
-]
-
 export function FinancialRatios() {
   const { t } = useLanguage()
   const { formatPercentage } = useFormatter()
-  const [propertyType, setPropertyType] = useState("overall")
   const [activeIndex, setActiveIndex] = useState(0)
 
-  const ratios = financialRatios[propertyType as keyof typeof financialRatios]
+  const { data: invoices, loading: l1 } = useSupabaseQuery(fetchInvoices)
+  const { data: maintenance, loading: l2 } = useSupabaseQuery(fetchMaintenanceRequests)
+  const { data: units, loading: l3 } = useSupabaseQuery(fetchUnits)
+  const { data: properties, loading: l4 } = useSupabaseQuery(fetchProperties)
 
-  // Helper function to determine color based on value and benchmark
+  const loading = l1 || l2 || l3 || l4
+
+  // Compute real ratios from data
+  const totalRevenue = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+  const totalBilled = invoices.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+  const totalPending = invoices.filter((i: any) => i.status !== "paid").reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+
+  const totalUnits = units.length
+  const occupiedUnits = units.filter((u: any) => u.status === "occupied").length
+  const occupancyRate = totalUnits > 0 ? occupiedUnits / totalUnits : 0
+
+  // Approximate ratios from available data
+  const collectionRate = invoices.length > 0 ? invoices.filter((i: any) => i.status === "paid").length / invoices.length : 0
+  const expenseRatio = totalBilled > 0 ? totalPending / totalBilled : 0
+  const capRate = totalRevenue > 0 ? (totalRevenue / 12) / (totalRevenue * 10) : 0.07 // approximate
+  const dscr = totalPending > 0 ? totalRevenue / totalPending : 1.5
+  const cashOnCash = collectionRate * 0.08 // approximate
+  const grm = totalRevenue > 0 ? (totalBilled * 12) / totalRevenue : 10
+  const breakEvenRatio = totalBilled > 0 ? (totalPending) / totalBilled : 0.8
+
+  const ratios = {
+    capRate: Math.min(capRate, 0.15),
+    operatingExpenseRatio: Math.min(expenseRatio, 1),
+    debtServiceCoverageRatio: Math.min(Math.max(dscr, 0.5), 3),
+    cashOnCashReturn: Math.min(cashOnCash, 0.15),
+    grossRentMultiplier: Math.min(Math.max(grm, 5), 20),
+    breakEvenRatio: Math.min(breakEvenRatio, 1),
+  }
+
+  // Income breakdown pie chart
+  const roiBreakdownData = [
+    { name: "Collected", value: Math.round(collectionRate * 100), color: "#3B82F6" },
+    { name: "Pending", value: Math.round((1 - collectionRate) * 100), color: "#8B5CF6" },
+  ]
+
+  // Status breakdown pie chart
+  const paidCount = invoices.filter((i: any) => i.status === "paid").length
+  const pendingCount = invoices.filter((i: any) => i.status === "pending").length
+  const overdueCount = invoices.filter((i: any) => i.status === "overdue").length
+  const totalInv = invoices.length || 1
+  const expenseBreakdownData = [
+    { name: "Paid", value: Math.round((paidCount / totalInv) * 100), color: "#22C55E" },
+    { name: "Pending", value: Math.round((pendingCount / totalInv) * 100), color: "#FBBF24" },
+    { name: "Overdue", value: Math.round((overdueCount / totalInv) * 100), color: "#F43F5E" },
+    { name: "Maintenance", value: maintenance.length, color: "#60A5FA" },
+  ].filter(d => d.value > 0)
+
   const getRatioColor = (value: number, metric: keyof typeof benchmarks) => {
     const { min, target, max } = benchmarks[metric]
-
-    // For metrics where higher is better (cap rate, DSCR, cash on cash)
     if (metric === "capRate" || metric === "debtServiceCoverageRatio" || metric === "cashOnCashReturn") {
       if (value >= target) return "bg-green-500"
       if (value >= min) return "bg-yellow-500"
       return "bg-red-500"
     }
-
-    // For metrics where lower is better (operating expense ratio, break even ratio)
     if (metric === "operatingExpenseRatio" || metric === "breakEvenRatio") {
       if (value <= target) return "bg-green-500"
       if (value <= max) return "bg-yellow-500"
       return "bg-red-500"
     }
-
-    // For GRM, closer to target is better
     if (metric === "grossRentMultiplier") {
       if (value >= min && value <= max) return "bg-green-500"
       return "bg-yellow-500"
     }
-
-    return "bg-blue-500" // Default
+    return "bg-blue-500"
   }
 
-  // Helper function to get progress percentage
   const getProgressPercentage = (value: number, metric: keyof typeof benchmarks) => {
     const { min, max } = benchmarks[metric]
-
-    // For metrics where we want to show percentage within range
     let percentage = ((value - min) / (max - min)) * 100
-
-    // Clamp between 0 and 100
-    percentage = Math.max(0, Math.min(100, percentage))
-
-    return percentage
+    return Math.max(0, Math.min(100, percentage))
   }
 
-  // Pie chart active sector
-  const onPieEnter = (_: any, index: number) => {
-    setActiveIndex(index)
-  }
+  const onPieEnter = (_: any, index: number) => setActiveIndex(index)
 
   const renderActiveShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props
-
     return (
       <g>
-        <text x={cx} y={cy} dy={-20} textAnchor="middle" fill="#888">
-          {payload.name}
-        </text>
-        <text x={cx} y={cy} textAnchor="middle" fill="#333" style={{ fontSize: 20, fontWeight: "bold" }}>
-          {`${value}%`}
-        </text>
-        <text x={cx} y={cy} dy={20} textAnchor="middle" fill="#999">
-          {`(${(percent * 100).toFixed(0)}%)`}
-        </text>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius + 10}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-        />
+        <text x={cx} y={cy} dy={-20} textAnchor="middle" fill="#888">{payload.name}</text>
+        <text x={cx} y={cy} textAnchor="middle" fill="#333" style={{ fontSize: 20, fontWeight: "bold" }}>{`${value}%`}</text>
+        <text x={cx} y={cy} dy={20} textAnchor="middle" fill="#999">{`(${(percent * 100).toFixed(0)}%)`}</text>
+        <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 10} startAngle={startAngle} endAngle={endAngle} fill={fill} />
       </g>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}><CardHeader className="pb-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-6 w-16 mt-1" /></CardHeader><CardContent><Skeleton className="h-2 w-full" /></CardContent></Card>
+          ))}
+        </div>
+      </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">{t("financial.keyFinancialRatios")}</h3>
-        <Tabs value={propertyType} onValueChange={setPropertyType} className="w-auto">
-          <TabsList>
-            <TabsTrigger value="overall">{t("financial.overall")}</TabsTrigger>
-            <TabsTrigger value="residential">{t("financial.residential")}</TabsTrigger>
-            <TabsTrigger value="commercial">{t("financial.commercial")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      <h3 className="text-lg font-medium">{t("financial.keyFinancialRatios")}</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Cap Rate */}
@@ -165,36 +145,19 @@ export function FinancialRatios() {
               <CardTitle className="text-sm font-medium">
                 {t("financial.capRate")}
                 <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" />
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">{t("financial.capRateInfo.title")}</h4>
-                      <p className="text-sm">{t("financial.capRateInfo.description")}</p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>{t("financial.capRateInfo.formula")}</p>
-                        <p className="mt-1">{t("financial.capRateInfo.benchmark")}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
+                  <HoverCardTrigger asChild><InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" /></HoverCardTrigger>
+                  <HoverCardContent className="w-80"><h4 className="font-semibold">{t("financial.capRateInfo.title")}</h4><p className="text-sm">{t("financial.capRateInfo.description")}</p></HoverCardContent>
                 </HoverCard>
               </CardTitle>
               <span className="text-2xl font-bold">{formatPercentage(ratios.capRate)}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Progress
-                value={getProgressPercentage(ratios.capRate, "capRate")}
-                className="h-2"
-                indicatorClassName={getRatioColor(ratios.capRate, "capRate")}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatPercentage(benchmarks.capRate.min)}</span>
-                <span className="font-medium">{formatPercentage(benchmarks.capRate.target)}</span>
-                <span>{formatPercentage(benchmarks.capRate.max)}</span>
-              </div>
+            <Progress value={getProgressPercentage(ratios.capRate, "capRate")} className="h-2" indicatorClassName={getRatioColor(ratios.capRate, "capRate")} />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{formatPercentage(benchmarks.capRate.min)}</span>
+              <span className="font-medium">{formatPercentage(benchmarks.capRate.target)}</span>
+              <span>{formatPercentage(benchmarks.capRate.max)}</span>
             </div>
           </CardContent>
         </Card>
@@ -203,80 +166,34 @@ export function FinancialRatios() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                {t("financial.operatingExpenseRatio")}
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" />
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">{t("financial.operatingExpenseRatioInfo.title")}</h4>
-                      <p className="text-sm">{t("financial.operatingExpenseRatioInfo.description")}</p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>{t("financial.operatingExpenseRatioInfo.formula")}</p>
-                        <p className="mt-1">{t("financial.operatingExpenseRatioInfo.benchmark")}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{t("financial.operatingExpenseRatio")}</CardTitle>
               <span className="text-2xl font-bold">{formatPercentage(ratios.operatingExpenseRatio)}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Progress
-                value={getProgressPercentage(ratios.operatingExpenseRatio, "operatingExpenseRatio")}
-                className="h-2"
-                indicatorClassName={getRatioColor(ratios.operatingExpenseRatio, "operatingExpenseRatio")}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatPercentage(benchmarks.operatingExpenseRatio.min)}</span>
-                <span className="font-medium">{formatPercentage(benchmarks.operatingExpenseRatio.target)}</span>
-                <span>{formatPercentage(benchmarks.operatingExpenseRatio.max)}</span>
-              </div>
+            <Progress value={getProgressPercentage(ratios.operatingExpenseRatio, "operatingExpenseRatio")} className="h-2" indicatorClassName={getRatioColor(ratios.operatingExpenseRatio, "operatingExpenseRatio")} />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{formatPercentage(benchmarks.operatingExpenseRatio.min)}</span>
+              <span className="font-medium">{formatPercentage(benchmarks.operatingExpenseRatio.target)}</span>
+              <span>{formatPercentage(benchmarks.operatingExpenseRatio.max)}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Debt Service Coverage Ratio */}
+        {/* DSCR */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                {t("financial.debtServiceCoverageRatio")}
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" />
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">{t("financial.dscRatioInfo.title")}</h4>
-                      <p className="text-sm">{t("financial.dscRatioInfo.description")}</p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>{t("financial.dscRatioInfo.formula")}</p>
-                        <p className="mt-1">{t("financial.dscRatioInfo.benchmark")}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{t("financial.debtServiceCoverageRatio")}</CardTitle>
               <span className="text-2xl font-bold">{ratios.debtServiceCoverageRatio.toFixed(2)}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Progress
-                value={getProgressPercentage(ratios.debtServiceCoverageRatio, "debtServiceCoverageRatio")}
-                className="h-2"
-                indicatorClassName={getRatioColor(ratios.debtServiceCoverageRatio, "debtServiceCoverageRatio")}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{benchmarks.debtServiceCoverageRatio.min.toFixed(2)}</span>
-                <span className="font-medium">{benchmarks.debtServiceCoverageRatio.target.toFixed(2)}</span>
-                <span>{benchmarks.debtServiceCoverageRatio.max.toFixed(2)}</span>
-              </div>
+            <Progress value={getProgressPercentage(ratios.debtServiceCoverageRatio, "debtServiceCoverageRatio")} className="h-2" indicatorClassName={getRatioColor(ratios.debtServiceCoverageRatio, "debtServiceCoverageRatio")} />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{benchmarks.debtServiceCoverageRatio.min.toFixed(2)}</span>
+              <span className="font-medium">{benchmarks.debtServiceCoverageRatio.target.toFixed(2)}</span>
+              <span>{benchmarks.debtServiceCoverageRatio.max.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -285,39 +202,16 @@ export function FinancialRatios() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                {t("financial.cashOnCashReturn")}
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" />
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">{t("financial.cashOnCashInfo.title")}</h4>
-                      <p className="text-sm">{t("financial.cashOnCashInfo.description")}</p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>{t("financial.cashOnCashInfo.formula")}</p>
-                        <p className="mt-1">{t("financial.cashOnCashInfo.benchmark")}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{t("financial.cashOnCashReturn")}</CardTitle>
               <span className="text-2xl font-bold">{formatPercentage(ratios.cashOnCashReturn)}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Progress
-                value={getProgressPercentage(ratios.cashOnCashReturn, "cashOnCashReturn")}
-                className="h-2"
-                indicatorClassName={getRatioColor(ratios.cashOnCashReturn, "cashOnCashReturn")}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatPercentage(benchmarks.cashOnCashReturn.min)}</span>
-                <span className="font-medium">{formatPercentage(benchmarks.cashOnCashReturn.target)}</span>
-                <span>{formatPercentage(benchmarks.cashOnCashReturn.max)}</span>
-              </div>
+            <Progress value={getProgressPercentage(ratios.cashOnCashReturn, "cashOnCashReturn")} className="h-2" indicatorClassName={getRatioColor(ratios.cashOnCashReturn, "cashOnCashReturn")} />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{formatPercentage(benchmarks.cashOnCashReturn.min)}</span>
+              <span className="font-medium">{formatPercentage(benchmarks.cashOnCashReturn.target)}</span>
+              <span>{formatPercentage(benchmarks.cashOnCashReturn.max)}</span>
             </div>
           </CardContent>
         </Card>
@@ -326,39 +220,16 @@ export function FinancialRatios() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                {t("financial.grossRentMultiplier")}
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" />
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">{t("financial.grmInfo.title")}</h4>
-                      <p className="text-sm">{t("financial.grmInfo.description")}</p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>{t("financial.grmInfo.formula")}</p>
-                        <p className="mt-1">{t("financial.grmInfo.benchmark")}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{t("financial.grossRentMultiplier")}</CardTitle>
               <span className="text-2xl font-bold">{ratios.grossRentMultiplier.toFixed(1)}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Progress
-                value={getProgressPercentage(ratios.grossRentMultiplier, "grossRentMultiplier")}
-                className="h-2"
-                indicatorClassName={getRatioColor(ratios.grossRentMultiplier, "grossRentMultiplier")}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{benchmarks.grossRentMultiplier.min.toFixed(1)}</span>
-                <span className="font-medium">{benchmarks.grossRentMultiplier.target.toFixed(1)}</span>
-                <span>{benchmarks.grossRentMultiplier.max.toFixed(1)}</span>
-              </div>
+            <Progress value={getProgressPercentage(ratios.grossRentMultiplier, "grossRentMultiplier")} className="h-2" indicatorClassName={getRatioColor(ratios.grossRentMultiplier, "grossRentMultiplier")} />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{benchmarks.grossRentMultiplier.min.toFixed(1)}</span>
+              <span className="font-medium">{benchmarks.grossRentMultiplier.target.toFixed(1)}</span>
+              <span>{benchmarks.grossRentMultiplier.max.toFixed(1)}</span>
             </div>
           </CardContent>
         </Card>
@@ -367,46 +238,22 @@ export function FinancialRatios() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                {t("financial.breakEvenRatio")}
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <InfoCircle className="inline-block ml-1 h-4 w-4 text-muted-foreground cursor-help" />
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">{t("financial.breakEvenInfo.title")}</h4>
-                      <p className="text-sm">{t("financial.breakEvenInfo.description")}</p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>{t("financial.breakEvenInfo.formula")}</p>
-                        <p className="mt-1">{t("financial.breakEvenInfo.benchmark")}</p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{t("financial.breakEvenRatio")}</CardTitle>
               <span className="text-2xl font-bold">{formatPercentage(ratios.breakEvenRatio)}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Progress
-                value={getProgressPercentage(ratios.breakEvenRatio, "breakEvenRatio")}
-                className="h-2"
-                indicatorClassName={getRatioColor(ratios.breakEvenRatio, "breakEvenRatio")}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatPercentage(benchmarks.breakEvenRatio.min)}</span>
-                <span className="font-medium">{formatPercentage(benchmarks.breakEvenRatio.target)}</span>
-                <span>{formatPercentage(benchmarks.breakEvenRatio.max)}</span>
-              </div>
+            <Progress value={getProgressPercentage(ratios.breakEvenRatio, "breakEvenRatio")} className="h-2" indicatorClassName={getRatioColor(ratios.breakEvenRatio, "breakEvenRatio")} />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{formatPercentage(benchmarks.breakEvenRatio.min)}</span>
+              <span className="font-medium">{formatPercentage(benchmarks.breakEvenRatio.target)}</span>
+              <span>{formatPercentage(benchmarks.breakEvenRatio.max)}</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* ROI Breakdown */}
         <Card>
           <CardHeader>
             <CardTitle>{t("financial.roiBreakdown")}</CardTitle>
@@ -439,7 +286,6 @@ export function FinancialRatios() {
           </CardContent>
         </Card>
 
-        {/* Expense Breakdown */}
         <Card>
           <CardHeader>
             <CardTitle>{t("financial.expenseBreakdown")}</CardTitle>

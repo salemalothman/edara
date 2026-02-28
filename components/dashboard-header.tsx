@@ -8,10 +8,12 @@ import { Logo } from "@/components/logo"
 import { useLanguage } from "@/hooks/use-language"
 import { Button } from "@/components/ui/button"
 import { ExportButton } from "@/components/ui/export-button"
-import { Plus } from "lucide-react"
+import { Bell, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Badge } from "@/components/ui/badge"
+import { fetchUnreadCount } from "@/lib/services/notifications"
 
 interface DashboardHeaderProps {
   showDatePicker?: boolean
@@ -36,6 +38,11 @@ export function DashboardHeader({
   const router = useRouter()
   const { toast } = useToast()
   const [isExporting, setIsExporting] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    fetchUnreadCount().then(setUnreadCount)
+  }, [])
 
   const handleAddButtonClick = () => {
     if (onAddButtonClick) {
@@ -85,6 +92,18 @@ export function DashboardHeader({
               {addButtonLabel || t("properties.addProperty")}
             </Button>
           )}
+
+          <Button variant="ghost" size="icon" className="relative" onClick={() => {
+            const tabsTrigger = document.querySelector('[data-value="notifications"]') as HTMLElement
+            tabsTrigger?.click()
+          }}>
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 text-xs flex items-center justify-center">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Badge>
+            )}
+          </Button>
 
           <UserNav />
         </div>

@@ -24,6 +24,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { useFormatter } from "@/hooks/use-formatter"
+import { insertContract, uploadContractFile } from "@/lib/services/contracts"
+import { fetchProperties } from "@/lib/services/properties"
+import { fetchTenants } from "@/lib/services/tenants"
+import { fetchUnitsByProperty } from "@/lib/services/units"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
@@ -44,7 +49,7 @@ interface ContractFormData {
   file: File | null
 }
 
-export function AddContractDialog() {
+export function AddContractDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("upload")
@@ -71,32 +76,16 @@ export function AddContractDialog() {
     file: null,
   })
 
-  const tenants = [
-    { id: "tenant-1", name: "John Doe" },
-    { id: "tenant-2", name: "Maria Smith" },
-    { id: "tenant-3", name: "Robert Johnson" },
-    { id: "tenant-4", name: "Amanda Lee" },
-    { id: "tenant-5", name: "David Wilson" },
-  ]
+  const { data: tenantsData } = useSupabaseQuery(fetchTenants)
+  const tenants = tenantsData.map((t: any) => ({ id: t.id, name: `${t.first_name} ${t.last_name}` }))
 
-  const properties = [
-    { id: "prop-1", name: "Sunset Towers" },
-    { id: "prop-2", name: "Ocean View Apartments" },
-    { id: "prop-3", name: "Downtown Business Center" },
-    { id: "prop-4", name: "Parkside Residences" },
-    { id: "prop-5", name: "Retail Plaza" },
-  ]
+  const { data: propertiesData } = useSupabaseQuery(fetchProperties)
+  const properties = propertiesData.map((p: any) => ({ id: p.id, name: p.name }))
 
-  const units = [
-    { id: "unit-1", propertyId: "prop-1", name: "Apartment 301" },
-    { id: "unit-2", propertyId: "prop-1", name: "Apartment 302" },
-    { id: "unit-3", propertyId: "prop-2", name: "Unit 205" },
-    { id: "unit-4", propertyId: "prop-3", name: "Office 405" },
-    { id: "unit-5", propertyId: "prop-4", name: "Villa 12" },
-    { id: "unit-6", propertyId: "prop-5", name: "Shop 3" },
-  ]
-
-  const filteredUnits = units.filter((unit) => unit.propertyId === formData.propertyId)
+  const { data: filteredUnits } = useSupabaseQuery(
+    () => formData.propertyId ? fetchUnitsByProperty(formData.propertyId) : Promise.resolve([]),
+    [formData.propertyId]
+  )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -104,7 +93,11 @@ export function AddContractDialog() {
   }
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }))
+    if (id === "propertyId") {
+      setFormData((prev) => ({ ...prev, propertyId: value, unitId: "" }))
+    } else {
+      setFormData((prev) => ({ ...prev, [id]: value }))
+    }
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +114,6 @@ export function AddContractDialog() {
     fileInputRef.current?.click()
   }
 
-  // Simulate contract data extraction
   const extractContractData = async (file: File) => {
     setIsExtracting(true)
     setExtractionProgress(0)
@@ -129,31 +121,19 @@ export function AddContractDialog() {
     setExtractionError(false)
 
     try {
-      // Simulate progress
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise((resolve) => setTimeout(resolve, 200))
+      for (let i = 0; i <= 100; i += 20) {
+        await new Promise((resolve) => setTimeout(resolve, 150))
         setExtractionProgress(i)
       }
 
-      // Simulate extracted data (in a real app, this would come from an API)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Generate a random contract ID
       const contractId = `CONT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
 
-      // Set extracted data
       setFormData((prev) => ({
         ...prev,
         contractId,
-        tenantId: "tenant-1", // Default to first tenant
-        propertyId: "prop-1", // Default to first property
-        unitId: "unit-1", // Default to first unit
         startDate: new Date(),
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-        rentAmount: "1250",
-        depositAmount: "2500",
         paymentFrequency: "monthly",
-        terms: "Standard lease agreement terms apply. Tenant is responsible for utilities.",
       }))
 
       setExtractionComplete(true)
@@ -185,15 +165,6 @@ export function AddContractDialog() {
       }
     }
 
-    if (!formData.file) {
-      toast({
-        title: t("validation.error"),
-        description: t("contracts.fileRequired"),
-        variant: "destructive",
-      })
-      return false
-    }
-
     return true
   }
 
@@ -203,8 +174,24 @@ export function AddContractDialog() {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      let fileUrl: string | null = null
+      if (formData.file) {
+        fileUrl = await uploadContractFile(formData.file)
+      }
+      await insertContract({
+        contract_id: formData.contractId,
+        tenant_id: formData.tenantId,
+        property_id: formData.propertyId,
+        unit_id: formData.unitId,
+        start_date: formData.startDate!.toISOString().split('T')[0],
+        end_date: formData.endDate!.toISOString().split('T')[0],
+        rent_amount: parseFloat(formData.rentAmount),
+        deposit_amount: formData.depositAmount ? parseFloat(formData.depositAmount) : null,
+        payment_frequency: formData.paymentFrequency || 'monthly',
+        terms: formData.terms || null,
+        file_url: fileUrl,
+      })
+      onSuccess?.()
 
       toast({
         title: t("contracts.addSuccess"),
@@ -239,7 +226,13 @@ export function AddContractDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen)
+      if (isOpen && !formData.contractId) {
+        const contractId = `CONT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+        setFormData((prev) => ({ ...prev, contractId }))
+      }
+    }}>
       <DialogTrigger asChild>
         <Button>
           <FileText className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> {t("contracts.addContract")}
@@ -254,7 +247,7 @@ export function AddContractDialog() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload">{t("contracts.upload")}</TabsTrigger>
-            <TabsTrigger value="details" disabled={!formData.file || isExtracting}>
+            <TabsTrigger value="details" disabled={isExtracting}>
               {t("contracts.details")}
             </TabsTrigger>
           </TabsList>
@@ -387,7 +380,7 @@ export function AddContractDialog() {
                       <SelectValue placeholder={t("contracts.selectUnit")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredUnits.map((unit) => (
+                      {filteredUnits.map((unit: any) => (
                         <SelectItem key={unit.id} value={unit.id}>
                           {unit.name}
                         </SelectItem>
@@ -514,18 +507,16 @@ export function AddContractDialog() {
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             {t("common.cancel")}
           </Button>
-          {activeTab === "details" && (
-            <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("common.saving")}
-                </>
-              ) : (
-                t("common.save")
-              )}
-            </Button>
-          )}
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("common.saving")}
+              </>
+            ) : (
+              t("common.save")
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

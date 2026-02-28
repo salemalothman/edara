@@ -1,11 +1,5 @@
-import type { Metadata } from "next"
-import { ContractsPageClient } from "./page-client"
-
-export const metadata: Metadata = {
-  title: "Contracts | Edara Dashboard",
-  description: "Manage your lease contracts",
-}
+import { redirect } from "next/navigation"
 
 export default function ContractsPage() {
-  return <ContractsPageClient />
+  redirect("/tenants")
 }

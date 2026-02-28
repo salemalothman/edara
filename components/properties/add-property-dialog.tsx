@@ -16,6 +16,7 @@ import { FormDialog } from "@/components/ui/form-dialog"
 import { useDialogForm } from "@/hooks/use-dialog-form"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
+import { insertProperty, uploadPropertyImages } from "@/lib/services/properties"
 
 interface PropertyFormData {
   name: string
@@ -59,7 +60,7 @@ const initialFormData: PropertyFormData = {
   images: [],
 }
 
-export function AddPropertyDialog() {
+export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { t } = useLanguage()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -85,6 +86,26 @@ export function AddPropertyDialog() {
     useDialogForm<PropertyFormData>({
       initialData: initialFormData,
       validationFn: validateForm,
+      onSubmit: async (data) => {
+        let imageUrls: string[] = []
+        if (data.images.length > 0) {
+          imageUrls = await uploadPropertyImages(data.images)
+        }
+        await insertProperty({
+          name: data.name,
+          type: data.type,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zip: data.zip,
+          units: parseInt(data.units),
+          size: data.size ? parseFloat(data.size) : null,
+          description: data.description || null,
+          amenities: data.amenities,
+          image_urls: imageUrls,
+        })
+        onSuccess?.()
+      },
       successMessage: t("properties.propertyAdded"),
       errorMessage: t("properties.addError"),
     })

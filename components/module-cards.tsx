@@ -17,7 +17,7 @@ export function ModuleCards() {
         "Create, renew, and manage tenant contracts with flexible terms, digital signatures, and electronic records.",
       icon: FileText,
       action: "Manage Contracts",
-      path: "/contracts",
+      path: "/tenants",
     },
     {
       title: "Financial Management",
@@ -30,10 +30,10 @@ export function ModuleCards() {
     {
       title: "Reporting & Analytics",
       description:
-        "Generate real-time financial analytics, monthly reports, and portfolio performance overviews with customizable parameters.",
+        "View real-time financial analytics, monthly reports, and portfolio performance overviews directly on the dashboard.",
       icon: BarChart,
-      action: "View Reports",
-      path: "/reports",
+      action: "View Dashboard",
+      path: "/",
     },
     {
       title: "Communication & Notifications",

@@ -6,23 +6,13 @@ import { useTheme } from "next-themes"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useState } from "react"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
+import { fetchInvoices } from "@/lib/services/invoices"
+import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
 
-// Mock financial data for the past 12 months
-const financialData = [
-  { month: "Jan", revenue: 42500, expenses: 15200, noi: 27300, roi: 0.068 },
-  { month: "Feb", revenue: 43200, expenses: 14800, noi: 28400, roi: 0.071 },
-  { month: "Mar", revenue: 44100, expenses: 16300, noi: 27800, roi: 0.07 },
-  { month: "Apr", revenue: 45000, expenses: 15900, noi: 29100, roi: 0.073 },
-  { month: "May", revenue: 46200, expenses: 16100, noi: 30100, roi: 0.075 },
-  { month: "Jun", revenue: 47500, expenses: 17200, noi: 30300, roi: 0.076 },
-  { month: "Jul", revenue: 48100, expenses: 17800, noi: 30300, roi: 0.076 },
-  { month: "Aug", revenue: 48800, expenses: 18100, noi: 30700, roi: 0.077 },
-  { month: "Sep", revenue: 49200, expenses: 17500, noi: 31700, roi: 0.079 },
-  { month: "Oct", revenue: 50100, expenses: 18300, noi: 31800, roi: 0.08 },
-  { month: "Nov", revenue: 51200, expenses: 18700, noi: 32500, roi: 0.081 },
-  { month: "Dec", revenue: 52500, expenses: 19200, noi: 33300, roi: 0.083 },
-]
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 export function FinancialMetricsChart() {
   const { t } = useLanguage()
@@ -30,37 +20,61 @@ export function FinancialMetricsChart() {
   const { theme } = useTheme()
   const [timeRange, setTimeRange] = useState("12months")
 
-  // Filter data based on selected time range
-  const getFilteredData = () => {
-    switch (timeRange) {
-      case "3months":
-        return financialData.slice(-3)
-      case "6months":
-        return financialData.slice(-6)
-      case "ytd":
-        // Assuming current month is December for demo purposes
-        return financialData
-      default:
-        return financialData
-    }
+  const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
+  const { data: maintenance, loading: loadingMaint } = useSupabaseQuery(fetchMaintenanceRequests)
+
+  const loading = loadingInv || loadingMaint
+
+  // Build monthly data from real invoices
+  const now = new Date()
+  const monthCount = timeRange === "3months" ? 3 : timeRange === "6months" ? 6 : 12
+  const allData = []
+  for (let i = monthCount - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = d.toISOString().substring(0, 7)
+    const label = MONTHS[d.getMonth()]
+
+    const monthInvoices = invoices.filter((inv: any) => inv.issue_date?.substring(0, 7) === key)
+    const revenue = monthInvoices
+      .filter((inv: any) => inv.status === "paid")
+      .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
+    const pending = monthInvoices
+      .filter((inv: any) => inv.status !== "paid")
+      .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
+
+    const maintCount = maintenance.filter((m: any) => m.created_at?.substring(0, 7) === key).length
+    const noi = revenue // no expense tracking yet, so NOI = revenue
+    const totalBilled = revenue + pending
+    const roi = totalBilled > 0 ? revenue / totalBilled : 0
+
+    allData.push({ month: label, revenue, expenses: pending, noi, roi })
   }
 
-  const filteredData = getFilteredData()
+  const totalRevenue = allData.reduce((sum, item) => sum + item.revenue, 0)
+  const totalExpenses = allData.reduce((sum, item) => sum + item.expenses, 0)
+  const totalNOI = allData.reduce((sum, item) => sum + item.noi, 0)
+  const averageROI = allData.length > 0 ? allData.reduce((sum, item) => sum + item.roi, 0) / allData.length : 0
 
-  // Calculate summary metrics
-  const totalRevenue = filteredData.reduce((sum, item) => sum + item.revenue, 0)
-  const totalExpenses = filteredData.reduce((sum, item) => sum + item.expenses, 0)
-  const totalNOI = filteredData.reduce((sum, item) => sum + item.noi, 0)
-  const averageROI = filteredData.reduce((sum, item) => sum + item.roi, 0) / filteredData.length
-
-  // Modern color palette
   const colors = {
-    revenue: theme === "dark" ? "#60A5FA" : "#3B82F6", // Blue
-    expenses: theme === "dark" ? "#FB7185" : "#F43F5E", // Red
-    noi: theme === "dark" ? "#4ADE80" : "#22C55E", // Green
-    roi: theme === "dark" ? "#A78BFA" : "#8B5CF6", // Purple
-    grid: theme === "dark" ? "#334155" : "#E2E8F0", // Subtle grid color
-    text: theme === "dark" ? "#94A3B8" : "#64748B", // Muted text color
+    revenue: theme === "dark" ? "#60A5FA" : "#3B82F6",
+    expenses: theme === "dark" ? "#FB7185" : "#F43F5E",
+    noi: theme === "dark" ? "#4ADE80" : "#22C55E",
+    roi: theme === "dark" ? "#A78BFA" : "#8B5CF6",
+    grid: theme === "dark" ? "#334155" : "#E2E8F0",
+    text: theme === "dark" ? "#94A3B8" : "#64748B",
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}><CardHeader className="p-3"><Skeleton className="h-4 w-20" /><Skeleton className="h-6 w-28 mt-1" /></CardHeader></Card>
+          ))}
+        </div>
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
   }
 
   return (
@@ -101,7 +115,6 @@ export function FinancialMetricsChart() {
               <SelectItem value="3months">{t("financial.last3Months")}</SelectItem>
               <SelectItem value="6months">{t("financial.last6Months")}</SelectItem>
               <SelectItem value="12months">{t("financial.last12Months")}</SelectItem>
-              <SelectItem value="ytd">{t("financial.yearToDate")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -109,7 +122,7 @@ export function FinancialMetricsChart() {
 
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={filteredData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ComposedChart data={allData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
             <XAxis
               dataKey="month"
@@ -124,7 +137,7 @@ export function FinancialMetricsChart() {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `${value / 1000}k`}
+              tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : `${value}`}
             />
             <YAxis
               yAxisId="right"
@@ -133,34 +146,26 @@ export function FinancialMetricsChart() {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `${(value * 100).toFixed(1)}%`}
+              tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
             />
             <Tooltip
               formatter={(value: number, name: string) => {
-                if (name === "roi") {
-                  return [formatPercentage(value), t("financial.roi")]
-                }
+                if (name === "roi") return [formatPercentage(value), t("financial.roi")]
                 return [
                   formatCurrency(value),
-                  name === "revenue"
-                    ? t("financial.revenue")
-                    : name === "expenses"
-                      ? t("financial.expenses")
-                      : t("financial.noi"),
+                  name === "revenue" ? t("financial.revenue")
+                    : name === "expenses" ? t("financial.expenses")
+                    : t("financial.noi"),
                 ]
               }}
-              labelFormatter={(label) => `${label}`}
             />
             <Legend
-              formatter={(value) => {
-                return value === "revenue"
-                  ? t("financial.revenue")
-                  : value === "expenses"
-                    ? t("financial.expenses")
-                    : value === "noi"
-                      ? t("financial.noi")
-                      : t("financial.roi")
-              }}
+              formatter={(value) =>
+                value === "revenue" ? t("financial.revenue")
+                  : value === "expenses" ? t("financial.expenses")
+                  : value === "noi" ? t("financial.noi")
+                  : t("financial.roi")
+              }
             />
             <Bar yAxisId="left" dataKey="revenue" fill={colors.revenue} name="revenue" barSize={20} />
             <Bar yAxisId="left" dataKey="expenses" fill={colors.expenses} name="expenses" barSize={20} />

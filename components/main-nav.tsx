@@ -15,10 +15,8 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
     { href: "/", label: t("common.dashboard") },
     { href: "/properties", label: t("navigation.properties") },
     { href: "/tenants", label: t("navigation.tenants") },
-    { href: "/contracts", label: t("navigation.contracts") },
     { href: "/invoices", label: t("navigation.invoices") },
     { href: "/maintenance", label: t("navigation.maintenance") },
-    { href: "/reports", label: t("navigation.reports") },
   ]
 
   return (

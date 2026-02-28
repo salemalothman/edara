@@ -24,6 +24,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { useFormatter } from "@/hooks/use-formatter"
+import { insertInvoice, uploadInvoiceFile } from "@/lib/services/invoices"
+import { fetchProperties } from "@/lib/services/properties"
+import { fetchTenants } from "@/lib/services/tenants"
+import { fetchUnitsByProperty } from "@/lib/services/units"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
@@ -53,7 +58,7 @@ interface InvoiceItem {
   amount: string
 }
 
-export function AddInvoiceDialog() {
+export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("upload")
@@ -81,32 +86,16 @@ export function AddInvoiceDialog() {
     file: null,
   })
 
-  const tenants = [
-    { id: "tenant-1", name: "John Doe" },
-    { id: "tenant-2", name: "Maria Smith" },
-    { id: "tenant-3", name: "Robert Johnson" },
-    { id: "tenant-4", name: "Amanda Lee" },
-    { id: "tenant-5", name: "David Wilson" },
-  ]
+  const { data: tenantsData } = useSupabaseQuery(fetchTenants)
+  const tenants = tenantsData.map((t: any) => ({ id: t.id, name: `${t.first_name} ${t.last_name}` }))
 
-  const properties = [
-    { id: "prop-1", name: "Sunset Towers" },
-    { id: "prop-2", name: "Ocean View Apartments" },
-    { id: "prop-3", name: "Downtown Business Center" },
-    { id: "prop-4", name: "Parkside Residences" },
-    { id: "prop-5", name: "Retail Plaza" },
-  ]
+  const { data: propertiesData } = useSupabaseQuery(fetchProperties)
+  const properties = propertiesData.map((p: any) => ({ id: p.id, name: p.name }))
 
-  const units = [
-    { id: "unit-1", propertyId: "prop-1", name: "Apartment 301" },
-    { id: "unit-2", propertyId: "prop-1", name: "Apartment 302" },
-    { id: "unit-3", propertyId: "prop-2", name: "Unit 205" },
-    { id: "unit-4", propertyId: "prop-3", name: "Office 405" },
-    { id: "unit-5", propertyId: "prop-4", name: "Villa 12" },
-    { id: "unit-6", propertyId: "prop-5", name: "Shop 3" },
-  ]
-
-  const filteredUnits = units.filter((unit) => unit.propertyId === formData.propertyId)
+  const { data: filteredUnits } = useSupabaseQuery(
+    () => formData.propertyId ? fetchUnitsByProperty(formData.propertyId) : Promise.resolve([]),
+    [formData.propertyId]
+  )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -114,7 +103,11 @@ export function AddInvoiceDialog() {
   }
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }))
+    if (id === "propertyId") {
+      setFormData((prev) => ({ ...prev, propertyId: value, unitId: "" }))
+    } else {
+      setFormData((prev) => ({ ...prev, [id]: value }))
+    }
   }
 
   const handleItemChange = (id: string, field: "description" | "amount", value: string) => {
@@ -164,7 +157,6 @@ export function AddInvoiceDialog() {
     fileInputRef.current?.click()
   }
 
-  // Simulate invoice data extraction
   const extractInvoiceData = async (file: File) => {
     setIsExtracting(true)
     setExtractionProgress(0)
@@ -172,38 +164,19 @@ export function AddInvoiceDialog() {
     setExtractionError(false)
 
     try {
-      // Simulate progress
-      for (let i = 0; i <= 100; i += 10) {
+      for (let i = 0; i <= 100; i += 20) {
         await new Promise((resolve) => setTimeout(resolve, 150))
         setExtractionProgress(i)
       }
 
-      // Simulate extracted data (in a real app, this would come from an API)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Generate a random invoice number
       const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
 
-      // Set extracted data
       setFormData((prev) => ({
         ...prev,
         invoiceNumber,
-        tenantId: "tenant-1", // Default to first tenant
-        propertyId: "prop-1", // Default to first property
-        unitId: "unit-1", // Default to first unit
         issueDate: new Date(),
         dueDate: new Date(new Date().setDate(new Date().getDate() + 15)),
-        amount: "1250",
         status: "pending",
-        description: "Monthly rent payment",
-        items: [
-          {
-            id: `item-${Date.now()}`,
-            description: "Monthly Rent - Apartment 301",
-            amount: "1250",
-          },
-        ],
-        sendNotification: true,
       }))
 
       setExtractionComplete(true)
@@ -235,15 +208,6 @@ export function AddInvoiceDialog() {
       }
     }
 
-    if (formData.items.length === 0) {
-      toast({
-        title: t("validation.error"),
-        description: t("invoices.itemsRequired"),
-        variant: "destructive",
-      })
-      return false
-    }
-
     return true
   }
 
@@ -253,12 +217,38 @@ export function AddInvoiceDialog() {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      let fileUrl: string | null = null
+      if (formData.file) {
+        fileUrl = await uploadInvoiceFile(formData.file)
+      }
+      // Filter out items with empty descriptions or amounts
+      const validItems = formData.items
+        .filter((item) => item.description && item.amount)
+        .map((item, i) => ({
+          description: item.description,
+          amount: parseFloat(item.amount) || 0,
+          sort_order: i,
+        }))
+
+      await insertInvoice({
+        invoice_number: formData.invoiceNumber,
+        tenant_id: formData.tenantId,
+        property_id: formData.propertyId,
+        unit_id: formData.unitId,
+        issue_date: formData.issueDate!.toISOString().split('T')[0],
+        due_date: formData.dueDate!.toISOString().split('T')[0],
+        amount: parseFloat(formData.amount),
+        status: formData.status || 'pending',
+        description: formData.description || null,
+        send_notification: formData.sendNotification,
+        file_url: fileUrl,
+        items: validItems,
+      })
+      onSuccess?.()
 
       toast({
-        title: t("invoices.addSuccess"),
-        description: t("invoices.invoiceAdded"),
+        title: t("invoices.addSuccess") || "Success",
+        description: t("invoices.invoiceAdded") || "Invoice added successfully",
       })
 
       // Reset form and close dialog
@@ -276,12 +266,14 @@ export function AddInvoiceDialog() {
         sendNotification: true,
         file: null,
       })
+      setActiveTab("upload")
       setExtractionComplete(false)
       setOpen(false)
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Invoice insert error:", error)
       toast({
-        title: t("common.error"),
-        description: t("invoices.addError"),
+        title: "Error",
+        description: error?.message || "Failed to add invoice. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -290,7 +282,13 @@ export function AddInvoiceDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen)
+      if (isOpen && !formData.invoiceNumber) {
+        const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+        setFormData((prev) => ({ ...prev, invoiceNumber }))
+      }
+    }}>
       <DialogTrigger asChild>
         <Button>
           <Receipt className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> {t("invoices.addInvoice")}
@@ -308,7 +306,7 @@ export function AddInvoiceDialog() {
             <TabsTrigger value="details" disabled={isExtracting}>
               {t("invoices.details")}
             </TabsTrigger>
-            <TabsTrigger value="items" disabled={isExtracting || !formData.tenantId}>
+            <TabsTrigger value="items" disabled={isExtracting}>
               {t("invoices.items")}
             </TabsTrigger>
           </TabsList>
@@ -476,7 +474,7 @@ export function AddInvoiceDialog() {
                       <SelectValue placeholder={t("invoices.selectUnit")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredUnits.map((unit) => (
+                      {filteredUnits.map((unit: any) => (
                         <SelectItem key={unit.id} value={unit.id}>
                           {unit.name}
                         </SelectItem>
@@ -647,19 +645,9 @@ export function AddInvoiceDialog() {
               )}
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-start">
               <Button type="button" variant="outline" onClick={() => setActiveTab("details")}>
                 {t("common.back")}
-              </Button>
-              <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("common.saving")}
-                  </>
-                ) : (
-                  t("common.save")
-                )}
               </Button>
             </div>
           </TabsContent>
@@ -669,18 +657,16 @@ export function AddInvoiceDialog() {
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             {t("common.cancel")}
           </Button>
-          {activeTab === "items" && (
-            <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("common.saving")}
-                </>
-              ) : (
-                t("common.save")
-              )}
-            </Button>
-          )}
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("common.saving")}
+              </>
+            ) : (
+              t("common.save")
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
