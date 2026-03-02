@@ -1,18 +1,19 @@
-import { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
+import { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import { Camera } from 'lucide-react-native'
+import { Camera, ChevronDown, Check } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { insertMaintenanceRequest, uploadMaintenanceImage } from '../../../lib/services/maintenance'
+import { fetchProperties } from '../../../lib/services/properties'
+import { fetchUnitsByProperty } from '../../../lib/services/units'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
+import { Card } from '../../../components/ui/Card'
 
 export default function AddMaintenanceScreen() {
   const [title, setTitle] = useState('')
-  const [propertyId, setPropertyId] = useState('')
-  const [unitId, setUnitId] = useState('')
   const [category, setCategory] = useState('plumbing')
   const [priority, setPriority] = useState('medium')
   const [description, setDescription] = useState('')
@@ -20,12 +21,37 @@ export default function AddMaintenanceScreen() {
   const [imageUris, setImageUris] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
+  // Property & Unit pickers
+  const [properties, setProperties] = useState<any[]>([])
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
+  const [showPropertyPicker, setShowPropertyPicker] = useState(false)
+  const [units, setUnits] = useState<any[]>([])
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
+  const [showUnitPicker, setShowUnitPicker] = useState(false)
+
   const { t } = useLanguage()
   const { colors } = useTheme()
   const router = useRouter()
 
   const categories = ['plumbing', 'electrical', 'hvac', 'appliance', 'structural', 'pest', 'other']
   const priorities = ['low', 'medium', 'high']
+
+  useEffect(() => {
+    fetchProperties().then(setProperties).catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (selectedPropertyId) {
+      fetchUnitsByProperty(selectedPropertyId).then(setUnits).catch(console.error)
+      setSelectedUnitId(null)
+    } else {
+      setUnits([])
+      setSelectedUnitId(null)
+    }
+  }, [selectedPropertyId])
+
+  const selectedProperty = properties.find(p => p.id === selectedPropertyId)
+  const selectedUnit = units.find(u => u.id === selectedUnitId)
 
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -39,14 +65,13 @@ export default function AddMaintenanceScreen() {
   }
 
   const handleSubmit = async () => {
-    if (!title || !propertyId || !unitId || !description) {
+    if (!title || !selectedPropertyId || !selectedUnitId || !description) {
       Alert.alert(t('common.error'), t('maintenance.requiredFieldsError'))
       return
     }
 
     setLoading(true)
     try {
-      // Upload images
       const uploadedUrls: string[] = []
       for (const uri of imageUris) {
         const url = await uploadMaintenanceImage(uri, `photo_${Date.now()}.jpg`)
@@ -55,8 +80,8 @@ export default function AddMaintenanceScreen() {
 
       await insertMaintenanceRequest({
         title,
-        property_id: propertyId,
-        unit_id: unitId,
+        property_id: selectedPropertyId,
+        unit_id: selectedUnitId,
         category,
         priority,
         description,
@@ -75,8 +100,90 @@ export default function AddMaintenanceScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss}>
         <Input label={`${t('maintenance.issueTitle')} *`} value={title} onChangeText={setTitle} placeholder={t('maintenance.issueTitlePlaceholder')} />
-        <Input label={`${t('maintenance.property')} *`} value={propertyId} onChangeText={setPropertyId} placeholder={t('invoices.propertyId')} />
-        <Input label={`${t('maintenance.unit')} *`} value={unitId} onChangeText={setUnitId} placeholder={t('invoices.unitId')} />
+
+        {/* Property Picker */}
+        <Text style={[styles.label, { color: colors.text }]}>{t('maintenance.property')} *</Text>
+        <TouchableOpacity
+          style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+          onPress={() => { setShowPropertyPicker(!showPropertyPicker); setShowUnitPicker(false) }}
+        >
+          <Text style={[styles.pickerText, { color: selectedProperty ? colors.text : colors.textSecondary }]}>
+            {selectedProperty ? selectedProperty.name : t('tenants.selectProperty')}
+          </Text>
+          <ChevronDown size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        {showPropertyPicker && (
+          <Card style={[styles.pickerList, { borderColor: colors.border }]}>
+            {properties.length === 0 && (
+              <Text style={[styles.pickerEmpty, { color: colors.textSecondary }]}>{t('tenants.noProperties')}</Text>
+            )}
+            {properties.map((prop) => (
+              <TouchableOpacity
+                key={prop.id}
+                style={[styles.pickerItem, selectedPropertyId === prop.id && { backgroundColor: colors.primaryLight }]}
+                onPress={() => {
+                  setSelectedPropertyId(prop.id)
+                  setShowPropertyPicker(false)
+                }}
+              >
+                <View style={styles.pickerItemContent}>
+                  <Text style={[styles.pickerItemText, { color: colors.text }]}>{prop.name}</Text>
+                  <Text style={[styles.pickerItemSub, { color: colors.textSecondary }]}>{prop.address}, {prop.city}</Text>
+                </View>
+                {selectedPropertyId === prop.id && <Check size={18} color={colors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
+
+        {/* Unit Picker */}
+        <Text style={[styles.label, { color: colors.text }]}>{t('maintenance.unit')} *</Text>
+        <TouchableOpacity
+          style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: selectedPropertyId ? 1 : 0.5 }]}
+          onPress={() => {
+            if (!selectedPropertyId) {
+              Alert.alert('', t('tenants.selectPropertyFirst'))
+              return
+            }
+            setShowUnitPicker(!showUnitPicker)
+            setShowPropertyPicker(false)
+          }}
+        >
+          <Text style={[styles.pickerText, { color: selectedUnit ? colors.text : colors.textSecondary }]}>
+            {selectedUnit ? `${selectedUnit.name}${selectedUnit.floor != null ? ` (${t('properties.floor')} ${selectedUnit.floor})` : ''}` : t('tenants.selectUnit')}
+          </Text>
+          <ChevronDown size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        {showUnitPicker && (
+          <Card style={[styles.pickerList, { borderColor: colors.border }]}>
+            {units.length === 0 && (
+              <Text style={[styles.pickerEmpty, { color: colors.textSecondary }]}>
+                {t('tenants.noUnits')}
+              </Text>
+            )}
+            {units.map((unit) => (
+              <TouchableOpacity
+                key={unit.id}
+                style={[styles.pickerItem, selectedUnitId === unit.id && { backgroundColor: colors.primaryLight }]}
+                onPress={() => {
+                  setSelectedUnitId(unit.id)
+                  setShowUnitPicker(false)
+                }}
+              >
+                <View style={styles.pickerItemContent}>
+                  <Text style={[styles.pickerItemText, { color: colors.text }]}>{unit.name}</Text>
+                  <Text style={[styles.pickerItemSub, { color: colors.textSecondary }]}>
+                    {unit.floor != null ? `${t('properties.floor')} ${unit.floor}` : ''}
+                    {unit.size ? `${unit.floor != null ? ' · ' : ''}${unit.size} ${t('tenants.sqm')}` : ''}
+                  </Text>
+                </View>
+                {selectedUnitId === unit.id && <Check size={18} color={colors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
 
         <Text style={[styles.label, { color: colors.text }]}>{t('maintenance.category')}</Text>
         <View style={styles.chipRow}>
@@ -134,6 +241,14 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '500', marginBottom: 8 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   chip: { paddingHorizontal: 14, paddingVertical: 8 },
+  pickerBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 12 },
+  pickerText: { fontSize: 15 },
+  pickerList: { marginTop: -8, marginBottom: 12, borderWidth: 1, maxHeight: 250 },
+  pickerEmpty: { fontSize: 14, padding: 16, textAlign: 'center' },
+  pickerItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: '#e2e8f0' },
+  pickerItemContent: { flex: 1 },
+  pickerItemText: { fontSize: 15, fontWeight: '500' },
+  pickerItemSub: { fontSize: 12, marginTop: 2 },
   photoBtn: { marginBottom: 8 },
   photoCount: { fontSize: 13, marginBottom: 16 },
   spacer: { height: 40 },
