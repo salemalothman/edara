@@ -25,7 +25,7 @@ export function Overview() {
   const chartData = []
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const key = d.toISOString().substring(0, 7) // "YYYY-MM"
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` // "YYYY-MM"
     const label = MONTHS[d.getMonth()]
 
     const income = invoices

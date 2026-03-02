@@ -32,7 +32,7 @@ export function FinancialMetricsChart() {
   const allData = []
   for (let i = monthCount - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const key = d.toISOString().substring(0, 7)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const label = MONTHS[d.getMonth()]
 
     const revenue = invoices
