@@ -104,13 +104,13 @@ export function MaintenanceCostBreakdown() {
           </Card>
           <Card>
             <CardHeader className="p-3">
-              <CardDescription>Completed</CardDescription>
+              <CardDescription>{t("maintenance.completed")}</CardDescription>
               <CardTitle className="text-xl text-green-600">{completedCount}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="p-3">
-              <CardDescription>Open</CardDescription>
+              <CardDescription>{t("dashboard.open")}</CardDescription>
               <CardTitle className="text-xl text-yellow-600">{pendingCount}</CardTitle>
             </CardHeader>
           </Card>
@@ -127,16 +127,16 @@ export function MaintenanceCostBreakdown() {
       {view === "breakdown" && (
         <div className="h-[400px]">
           {categoryData.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">No maintenance data</div>
+            <div className="flex items-center justify-center h-full text-muted-foreground">{t("dashboard.noMaintenanceData")}</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" />
                 <YAxis dataKey="category" type="category" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(value: number) => `${value} requests`} />
+                <Tooltip formatter={(value: number) => `${value} ${t("dashboard.requests")}`} />
                 <Legend />
-                <Bar dataKey="count" name="Requests" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="count" name={t("financial.requestsCount")} radius={[0, 4, 4, 0]}>
                   {categoryData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
@@ -157,11 +157,11 @@ export function MaintenanceCostBreakdown() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value: number) => `${value} requests`} />
+              <Tooltip formatter={(value: number) => `${value} ${t("dashboard.requests")}`} />
               <Legend />
               <Bar
                 dataKey="count"
-                name="Maintenance Requests"
+                name={t("dashboard.maintenanceRequestsLabel")}
                 fill={theme === "dark" ? "#60A5FA" : "#3B82F6"}
                 radius={[4, 4, 0, 0]}
               />
@@ -173,7 +173,7 @@ export function MaintenanceCostBreakdown() {
       {view === "recent" && (
         <div className="rounded-md border">
           {recentRequests.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No maintenance requests</div>
+            <div className="text-center py-8 text-muted-foreground">{t("financial.noMaintenanceRequests")}</div>
           ) : (
             <Table>
               <TableHeader>
@@ -181,7 +181,7 @@ export function MaintenanceCostBreakdown() {
                   <TableHead>{t("financial.property")}</TableHead>
                   <TableHead>{t("financial.category")}</TableHead>
                   <TableHead>{t("financial.description")}</TableHead>
-                  <TableHead>Priority</TableHead>
+                  <TableHead>{t("financial.priority")}</TableHead>
                   <TableHead>{t("financial.date")}</TableHead>
                   <TableHead>{t("financial.status")}</TableHead>
                 </TableRow>

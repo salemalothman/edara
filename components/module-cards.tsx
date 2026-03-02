@@ -12,51 +12,45 @@ export function ModuleCards() {
 
   const modules = [
     {
-      title: "Tenant & Contract Management",
-      description:
-        "Create, renew, and manage tenant contracts with flexible terms, digital signatures, and electronic records.",
+      title: t("modules.tenantContract.title"),
+      description: t("modules.tenantContract.description"),
       icon: FileText,
-      action: "Manage Contracts",
+      action: t("modules.tenantContract.action"),
       path: "/tenants",
     },
     {
-      title: "Financial Management",
-      description:
-        "Track payments, manage invoices, and process rent collections through secure payment gateways with Visa and MasterCard integration.",
+      title: t("modules.financial.title"),
+      description: t("modules.financial.description"),
       icon: CreditCard,
-      action: "Financial Dashboard",
+      action: t("modules.financial.action"),
       path: "/invoices",
     },
     {
-      title: "Reporting & Analytics",
-      description:
-        "View real-time financial analytics, monthly reports, and portfolio performance overviews directly on the dashboard.",
+      title: t("modules.reporting.title"),
+      description: t("modules.reporting.description"),
       icon: BarChart,
-      action: "View Dashboard",
+      action: t("modules.reporting.action"),
       path: "/",
     },
     {
-      title: "Communication & Notifications",
-      description:
-        "Send automated alerts and reminders via SMS, Email, and WhatsApp for payments, maintenance, and other important updates.",
+      title: t("modules.communication.title"),
+      description: t("modules.communication.description"),
       icon: MessageSquare,
-      action: "Communication Center",
+      action: t("modules.communication.action"),
       path: "/communications",
     },
     {
-      title: "Maintenance Management",
-      description:
-        "Handle service requests, track maintenance progress, and generate work orders for vendors or in-house service providers.",
+      title: t("modules.maintenance.title"),
+      description: t("modules.maintenance.description"),
       icon: Tool,
-      action: "Maintenance Portal",
+      action: t("modules.maintenance.action"),
       path: "/maintenance",
     },
     {
-      title: "User & Access Management",
-      description:
-        "Configure role-based access control, manage user permissions, and track user actions with detailed audit logs.",
+      title: t("modules.userAccess.title"),
+      description: t("modules.userAccess.description"),
       icon: Users,
-      action: "User Settings",
+      action: t("modules.userAccess.action"),
       path: "/settings/users",
     },
   ]

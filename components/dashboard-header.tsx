@@ -62,15 +62,15 @@ export function DashboardHeader({
         // Default export behavior
         await new Promise((resolve) => setTimeout(resolve, 1500))
         toast({
-          title: "Export Successful",
-          description: "Dashboard data has been exported successfully.",
+          title: t("financial.exportSuccess"),
+          description: t("financial.exportSuccessDesc"),
         })
       }
     } catch (error) {
       console.error("Export error:", error)
       toast({
-        title: "Export Failed",
-        description: "There was an error exporting the dashboard data.",
+        title: t("financial.exportError"),
+        description: t("financial.exportErrorDesc"),
         variant: "destructive",
       })
     } finally {

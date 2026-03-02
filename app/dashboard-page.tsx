@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { NotificationsTab } from "@/components/notifications/notifications-tab"
 
 function AnalyticsTab() {
+  const { t } = useLanguage()
   const { data: units, loading: loadingUnits } = useSupabaseQuery(fetchUnits)
   const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
   const { data: maintenance, loading: loadingMaint } = useSupabaseQuery(fetchMaintenanceRequests)
@@ -45,15 +46,15 @@ function AnalyticsTab() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Occupancy Rate</CardTitle>
-            <CardDescription>Current property occupancy</CardDescription>
+            <CardTitle>{t("dashboard.occupancyRate")}</CardTitle>
+            <CardDescription>{t("dashboard.currentOccupancy")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">
               {loading ? <Skeleton className="h-12 w-20 mx-auto" /> : (
                 <>
                   <div className="text-5xl font-bold text-primary">{occupancyRate}%</div>
-                  <p className="text-sm text-muted-foreground mt-2">{occupiedUnits} of {totalUnits} units occupied</p>
+                  <p className="text-sm text-muted-foreground mt-2">{occupiedUnits} {t("dashboard.of")} {totalUnits} {t("dashboard.unitsOccupied")}</p>
                 </>
               )}
             </div>
@@ -61,15 +62,15 @@ function AnalyticsTab() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Collection Rate</CardTitle>
-            <CardDescription>Rent collection efficiency</CardDescription>
+            <CardTitle>{t("dashboard.collectionRate")}</CardTitle>
+            <CardDescription>{t("dashboard.collectionEfficiency")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">
               {loading ? <Skeleton className="h-12 w-20 mx-auto" /> : (
                 <>
                   <div className="text-5xl font-bold text-primary">{collectionRate}%</div>
-                  <p className="text-sm text-muted-foreground mt-2">{paidInvoices} of {totalInvoices} invoices paid</p>
+                  <p className="text-sm text-muted-foreground mt-2">{paidInvoices} {t("dashboard.of")} {totalInvoices} {t("dashboard.invoicesPaid")}</p>
                 </>
               )}
             </div>
@@ -77,15 +78,15 @@ function AnalyticsTab() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Maintenance</CardTitle>
-            <CardDescription>Request status overview</CardDescription>
+            <CardTitle>{t("common.maintenance")}</CardTitle>
+            <CardDescription>{t("dashboard.requestStatusOverview")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">
               {loading ? <Skeleton className="h-12 w-20 mx-auto" /> : (
                 <>
                   <div className="text-5xl font-bold text-primary">{maintenance.length}</div>
-                  <p className="text-sm text-muted-foreground mt-2">{completedMaint} completed, {pendingMaint} open</p>
+                  <p className="text-sm text-muted-foreground mt-2">{completedMaint} {t("dashboard.completed")}, {pendingMaint} {t("dashboard.open")}</p>
                 </>
               )}
             </div>

@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts"
 import { useFormatter } from "@/hooks/use-formatter"
+import { useLanguage } from "@/hooks/use-language"
 import { useTheme } from "next-themes"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
@@ -12,6 +13,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function Overview() {
   const { formatCurrency } = useFormatter()
+  const { t } = useLanguage()
   const { theme } = useTheme()
 
   const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
@@ -75,7 +77,7 @@ export function Overview() {
         />
         <Tooltip
           formatter={(value: any, name: string) => formatCurrency(Number(value) || 0)}
-          labelFormatter={(label) => `Month: ${label}`}
+          labelFormatter={(label) => `${t("dashboard.month")}: ${label}`}
           contentStyle={{
             backgroundColor: theme === "dark" ? "#1E293B" : "#FFFFFF",
             borderColor: colors.grid,
@@ -87,7 +89,7 @@ export function Overview() {
         />
         <Legend
           wrapperStyle={{ paddingTop: "1rem" }}
-          formatter={(value) => <span style={{ color: colors.text }}>{value === "income" ? "Rental Income" : "Expenses"}</span>}
+          formatter={(value) => <span style={{ color: colors.text }}>{value === "income" ? t("dashboard.rentalIncome") : t("financial.expenses")}</span>}
         />
         <Bar dataKey="income" name="income" fill={colors.income} radius={[4, 4, 0, 0]} barSize={24} />
         <Bar dataKey="expenses" name="expenses" fill={colors.expenses} radius={[4, 4, 0, 0]} barSize={24} />

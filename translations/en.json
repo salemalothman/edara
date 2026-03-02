@@ -26,6 +26,8 @@
     "back": "Back",
     "remove": "Remove",
     "error": "Error",
+    "success": "Success",
+    "all": "All",
     "notifications": "Notifications",
     "features": {
       "title": "Key System Features",
@@ -61,7 +63,52 @@
     "tenantActivity": "Tenant Activity",
     "recentTenantInteractions": "Recent tenant interactions and updates",
     "viewAllRequests": "View All Requests",
-    "viewAllActivity": "View All Activity"
+    "viewAllActivity": "View All Activity",
+    "totalProperties": "Total Properties",
+    "totalUnits": "total units",
+    "activeTenants": "Active Tenants",
+    "acrossAllProperties": "Across all properties",
+    "vacantUnits": "Vacant Units",
+    "vacancyRate": "vacancy rate",
+    "noUnits": "No units",
+    "unitsOccupied": "units occupied",
+    "occupancyRate": "Occupancy Rate",
+    "currentOccupancy": "Current property occupancy",
+    "collectionRate": "Collection Rate",
+    "collectionEfficiency": "Rent collection efficiency",
+    "invoicesPaid": "invoices paid",
+    "requestStatusOverview": "Request status overview",
+    "completed": "completed",
+    "open": "open",
+    "of": "of",
+    "noRecentActivity": "No recent activity",
+    "noInvoicesFound": "No invoices found",
+    "unknownTenant": "Unknown Tenant",
+    "noMaintenanceRequests": "No maintenance requests found",
+    "rentalIncome": "Rental Income",
+    "month": "Month",
+    "paid": "Paid",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "collected": "Collected",
+    "collectionPercent": "Collection %",
+    "collectedRevenue": "Collected Revenue",
+    "noPropertiesFound": "No properties found",
+    "noMaintenanceData": "No maintenance data",
+    "requests": "requests",
+    "maintenanceRequestsLabel": "Maintenance Requests",
+    "openMenu": "Open menu",
+    "changeStatus": "Change Status",
+    "confirmDeleteMaintenance": "Are you sure you want to delete this maintenance request?",
+    "errorLoadingRequests": "Error loading requests",
+    "propertyUnit": "Property/Unit",
+    "issue": "Issue",
+    "reportedDate": "Reported Date",
+    "for": "for",
+    "invoiceLabel": "Invoice",
+    "maintenancePrefix": "Maintenance",
+    "unknown": "Unknown",
+    "property": "Property"
   },
   "properties": {
     "title": "Properties",
@@ -407,6 +454,9 @@
     "cost": "Cost",
     "date": "Date",
     "status": "Status",
+    "priority": "Priority",
+    "noMaintenanceRequests": "No maintenance requests",
+    "requestsCount": "Requests",
     "searchProperties": "Search properties",
     "sortBy": "Sort By",
     "propertyName": "Property Name",
@@ -454,6 +504,38 @@
       "description": "The break even ratio indicates how much of the gross operating income is used to cover debt service and operating expenses.",
       "formula": "Formula: (Operating Expenses + Debt Service) ÷ Gross Operating Income",
       "benchmark": "Benchmark: Lower is better. <85% is generally considered good."
+    }
+  },
+  "modules": {
+    "tenantContract": {
+      "title": "Tenant & Contract Management",
+      "description": "Create, renew, and manage tenant contracts with flexible terms, digital signatures, and electronic records.",
+      "action": "Manage Contracts"
+    },
+    "financial": {
+      "title": "Financial Management",
+      "description": "Track payments, manage invoices, and process rent collections through secure payment gateways with Visa and MasterCard integration.",
+      "action": "Financial Dashboard"
+    },
+    "reporting": {
+      "title": "Reporting & Analytics",
+      "description": "View real-time financial analytics, monthly reports, and portfolio performance overviews directly on the dashboard.",
+      "action": "View Dashboard"
+    },
+    "communication": {
+      "title": "Communication & Notifications",
+      "description": "Send automated alerts and reminders via SMS, Email, and WhatsApp for payments, maintenance, and other important updates.",
+      "action": "Communication Center"
+    },
+    "maintenance": {
+      "title": "Maintenance Management",
+      "description": "Handle service requests, track maintenance progress, and generate work orders for vendors or in-house service providers.",
+      "action": "Maintenance Portal"
+    },
+    "userAccess": {
+      "title": "User & Access Management",
+      "description": "Configure role-based access control, manage user permissions, and track user actions with detailed audit logs.",
+      "action": "User Settings"
     }
   },
   "status": {

@@ -6,10 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
 import { useFormatter } from "@/hooks/use-formatter"
+import { useLanguage } from "@/hooks/use-language"
 
 export function MaintenanceRequests() {
   const { data: requests, loading } = useSupabaseQuery(fetchMaintenanceRequests)
   const { formatDate } = useFormatter()
+  const { t } = useLanguage()
 
   // Show the 4 most recent requests
   const recent = requests.slice(0, 4)
@@ -32,7 +34,7 @@ export function MaintenanceRequests() {
   }
 
   if (recent.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">No maintenance requests found</p>
+    return <p className="text-sm text-muted-foreground text-center py-8">{t("dashboard.noMaintenanceRequests")}</p>
   }
 
   const statusBadge = (status: string) => {
@@ -47,11 +49,11 @@ export function MaintenanceRequests() {
 
   const statusLabel = (status: string) => {
     switch (status) {
-      case "completed": return "Completed"
-      case "in_progress": return "In Progress"
-      case "assigned": return "Assigned"
-      case "pending": return "Pending"
-      default: return status?.replace("_", " ") || "Pending"
+      case "completed": return t("status.completed")
+      case "in_progress": return t("status.inProgress")
+      case "assigned": return t("status.assigned")
+      case "pending": return t("status.pending")
+      default: return status?.replace("_", " ") || t("status.pending")
     }
   }
 

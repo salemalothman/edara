@@ -42,33 +42,33 @@ export function PropertyStats() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("dashboard.totalProperties")}</CardTitle>
           <Building className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12" /> : properties.length}</div>
-          <p className="text-xs text-muted-foreground">{units.length} total units</p>
+          <p className="text-xs text-muted-foreground">{units.length} {t("dashboard.totalUnits")}</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Tenants</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("dashboard.activeTenants")}</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12" /> : tenants.length}</div>
-          <p className="text-xs text-muted-foreground">Across all properties</p>
+          <p className="text-xs text-muted-foreground">{t("dashboard.acrossAllProperties")}</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Vacant Units</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("dashboard.vacantUnits")}</CardTitle>
           <Home className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12" /> : vacantUnits}</div>
           <p className="text-xs text-muted-foreground">
-            {units.length > 0 ? `${Math.round((vacantUnits / units.length) * 100)}% vacancy rate` : "No units"}
+            {units.length > 0 ? `${Math.round((vacantUnits / units.length) * 100)}% ${t("dashboard.vacancyRate")}` : t("dashboard.noUnits")}
           </p>
         </CardContent>
       </Card>

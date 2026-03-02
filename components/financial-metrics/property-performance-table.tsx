@@ -144,9 +144,9 @@ export function PropertyPerformanceTable() {
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => handleSort("name")}>{t("financial.propertyName")}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleSort("occupancyRate")}>{t("financial.occupancyRate")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("totalCollected")}>Collected Revenue</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("collectionRate")}>Collection Rate</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSort("maintenanceCount")}>Maintenance</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("totalCollected")}>{t("dashboard.collectedRevenue")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("collectionRate")}>{t("dashboard.collectionRate")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSort("maintenanceCount")}>{t("common.maintenance")}</DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleSort("performanceScore")}>{t("financial.performanceScore")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -160,17 +160,17 @@ export function PropertyPerformanceTable() {
               <TableHead>{t("financial.type")}</TableHead>
               <TableHead>{t("financial.units")}</TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort("occupancyRate")}>{t("financial.occupancyRate")}</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("totalCollected")}>Collected</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("totalPending")}>Pending</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("collectionRate")}>Collection %</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("maintenanceCount")}>Maintenance</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("totalCollected")}>{t("dashboard.collected")}</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("totalPending")}>{t("dashboard.pending")}</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("collectionRate")}>{t("dashboard.collectionPercent")}</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("maintenanceCount")}>{t("common.maintenance")}</TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort("performanceScore")}>{t("financial.performanceScore")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedProperties.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No properties found</TableCell>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{t("dashboard.noPropertiesFound")}</TableCell>
               </TableRow>
             ) : (
               sortedProperties.map((property: any) => (

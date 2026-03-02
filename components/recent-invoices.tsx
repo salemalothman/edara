@@ -34,7 +34,7 @@ export function RecentInvoices() {
   }
 
   if (recent.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">No invoices found</p>
+    return <p className="text-sm text-muted-foreground text-center py-8">{t("dashboard.noInvoicesFound")}</p>
   }
 
   const statusBadge = (status: string) => {
@@ -65,7 +65,7 @@ export function RecentInvoices() {
 
   const getTenantName = (inv: any) => {
     if (inv.tenant) return `${inv.tenant.first_name} ${inv.tenant.last_name}`
-    return "Unknown Tenant"
+    return t("dashboard.unknownTenant")
   }
 
   const getLocation = (inv: any) => {

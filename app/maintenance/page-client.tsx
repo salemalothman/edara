@@ -73,7 +73,7 @@ export function MaintenancePageClient() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this maintenance request?")) return
+    if (!window.confirm(t("dashboard.confirmDeleteMaintenance"))) return
     try {
       await deleteMaintenanceRequest(id)
       refetch()
@@ -84,7 +84,7 @@ export function MaintenancePageClient() {
   }
 
   const handleExport = () => {
-    const headers = ["Property/Unit", "Issue", "Category", "Reported Date", "Priority", "Status"]
+    const headers = [t("dashboard.propertyUnit"), t("dashboard.issue"), t("maintenance.category"), t("dashboard.reportedDate"), t("maintenance.priority"), t("common.status")]
     const rows = filteredRequests.map((r: any) => [
       `${r.property?.name || "—"}${r.unit?.name ? `, ${r.unit.name}` : ""}`,
       r.title,
@@ -146,12 +146,12 @@ export function MaintenancePageClient() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Property/Unit</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Reported Date</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("dashboard.propertyUnit")}</TableHead>
+                <TableHead>{t("dashboard.issue")}</TableHead>
+                <TableHead>{t("maintenance.category")}</TableHead>
+                <TableHead>{t("dashboard.reportedDate")}</TableHead>
+                <TableHead>{t("maintenance.priority")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
                 <TableHead className="text-right rtl:text-left">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -167,13 +167,13 @@ export function MaintenancePageClient() {
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-red-600">
-                    Error loading requests: {error}
+                    {t("dashboard.errorLoadingRequests")}: {error}
                   </TableCell>
                 </TableRow>
               ) : filteredRequests.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No maintenance requests found
+                    {t("dashboard.noMaintenanceRequests")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -200,14 +200,14 @@ export function MaintenancePageClient() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
+                            <span className="sr-only">{t("dashboard.openMenu")}</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Change Status</DropdownMenuLabel>
+                          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">{t("dashboard.changeStatus")}</DropdownMenuLabel>
                           {request.status !== "pending" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(request.id, "pending")}>
                               {t("maintenance.pending")}
@@ -233,7 +233,7 @@ export function MaintenancePageClient() {
                             className="text-red-600"
                             onClick={() => handleDelete(request.id)}
                           >
-                            Delete
+                            {t("common.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

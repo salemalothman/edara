@@ -26,6 +26,8 @@
     "back": "السابق",
     "remove": "إزالة",
     "error": "خطأ",
+    "success": "نجاح",
+    "all": "الكل",
     "notifications": "الإشعارات",
     "features": {
       "title": "ميزات النظام الرئيسية",
@@ -61,7 +63,52 @@
     "tenantActivity": "نشاط المستأجر",
     "recentTenantInteractions": "تفاعلات المستأجر الأخيرة والتحديثات",
     "viewAllRequests": "عرض جميع الطلبات",
-    "viewAllActivity": "عرض جميع النشاطات"
+    "viewAllActivity": "عرض جميع النشاطات",
+    "totalProperties": "إجمالي العقارات",
+    "totalUnits": "إجمالي الوحدات",
+    "activeTenants": "المستأجرين النشطين",
+    "acrossAllProperties": "في جميع العقارات",
+    "vacantUnits": "الوحدات الشاغرة",
+    "vacancyRate": "نسبة الشغور",
+    "noUnits": "لا توجد وحدات",
+    "unitsOccupied": "وحدات مشغولة",
+    "occupancyRate": "نسبة الإشغال",
+    "currentOccupancy": "إشغال العقارات الحالي",
+    "collectionRate": "نسبة التحصيل",
+    "collectionEfficiency": "كفاءة تحصيل الإيجار",
+    "invoicesPaid": "فواتير مدفوعة",
+    "requestStatusOverview": "نظرة عامة على حالة الطلبات",
+    "completed": "مكتملة",
+    "open": "مفتوحة",
+    "of": "من",
+    "noRecentActivity": "لا يوجد نشاط حديث",
+    "noInvoicesFound": "لا توجد فواتير",
+    "unknownTenant": "مستأجر غير معروف",
+    "noMaintenanceRequests": "لا توجد طلبات صيانة",
+    "rentalIncome": "دخل الإيجار",
+    "month": "الشهر",
+    "paid": "مدفوع",
+    "pending": "معلق",
+    "overdue": "متأخر",
+    "collected": "محصّل",
+    "collectionPercent": "نسبة التحصيل",
+    "collectedRevenue": "الإيرادات المحصّلة",
+    "noPropertiesFound": "لا توجد عقارات",
+    "noMaintenanceData": "لا توجد بيانات صيانة",
+    "requests": "طلبات",
+    "maintenanceRequestsLabel": "طلبات الصيانة",
+    "openMenu": "فتح القائمة",
+    "changeStatus": "تغيير الحالة",
+    "confirmDeleteMaintenance": "هل أنت متأكد من حذف طلب الصيانة هذا؟",
+    "errorLoadingRequests": "خطأ في تحميل الطلبات",
+    "propertyUnit": "العقار/الوحدة",
+    "issue": "المشكلة",
+    "reportedDate": "تاريخ الإبلاغ",
+    "for": "لـ",
+    "invoiceLabel": "فاتورة",
+    "maintenancePrefix": "صيانة",
+    "unknown": "غير معروف",
+    "property": "العقار"
   },
   "properties": {
     "title": "العقارات",
@@ -407,6 +454,9 @@
     "cost": "التكلفة",
     "date": "التاريخ",
     "status": "الحالة",
+    "priority": "الأولوية",
+    "noMaintenanceRequests": "لا توجد طلبات صيانة",
+    "requestsCount": "الطلبات",
     "searchProperties": "البحث في العقارات",
     "sortBy": "ترتيب حسب",
     "propertyName": "اسم العقار",
@@ -454,6 +504,38 @@
       "description": "نسبة التعادل تشير إلى مقدار الدخل التشغيلي الإجمالي المستخدم لتغطية خدمة الدين والمصروفات التشغيلية.",
       "formula": "الصيغة: (المصروفات التشغيلية + خدمة الدين) ÷ الدخل التشغيلي الإجمالي",
       "benchmark": "المعيار: كلما انخفض كان أفضل. <85% يعتبر جيد عموماً."
+    }
+  },
+  "modules": {
+    "tenantContract": {
+      "title": "إدارة المستأجرين والعقود",
+      "description": "إنشاء وتجديد وإدارة عقود المستأجرين بشروط مرنة وتوقيعات رقمية وسجلات إلكترونية.",
+      "action": "إدارة العقود"
+    },
+    "financial": {
+      "title": "الإدارة المالية",
+      "description": "تتبع المدفوعات وإدارة الفواتير ومعالجة تحصيل الإيجارات عبر بوابات دفع آمنة مع تكامل فيزا وماستركارد.",
+      "action": "لوحة التحكم المالية"
+    },
+    "reporting": {
+      "title": "التقارير والتحليلات",
+      "description": "عرض التحليلات المالية الفورية والتقارير الشهرية ونظرة عامة على أداء المحفظة مباشرة على لوحة التحكم.",
+      "action": "عرض لوحة التحكم"
+    },
+    "communication": {
+      "title": "التواصل والإشعارات",
+      "description": "إرسال تنبيهات وتذكيرات تلقائية عبر الرسائل القصيرة والبريد الإلكتروني والواتساب للمدفوعات والصيانة والتحديثات المهمة.",
+      "action": "مركز التواصل"
+    },
+    "maintenance": {
+      "title": "إدارة الصيانة",
+      "description": "معالجة طلبات الخدمة وتتبع تقدم الصيانة وإنشاء أوامر العمل للموردين أو مقدمي الخدمة الداخليين.",
+      "action": "بوابة الصيانة"
+    },
+    "userAccess": {
+      "title": "إدارة المستخدمين والصلاحيات",
+      "description": "تكوين التحكم في الوصول بناءً على الأدوار وإدارة أذونات المستخدمين وتتبع إجراءات المستخدمين بسجلات تدقيق مفصلة.",
+      "action": "إعدادات المستخدمين"
     }
   },
   "status": {

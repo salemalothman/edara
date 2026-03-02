@@ -65,8 +65,8 @@ export function FinancialRatios() {
 
   // Income breakdown pie chart
   const roiBreakdownData = [
-    { name: "Collected", value: Math.round(collectionRate * 100), color: "#3B82F6" },
-    { name: "Pending", value: Math.round((1 - collectionRate) * 100), color: "#8B5CF6" },
+    { name: t("dashboard.collected"), value: Math.round(collectionRate * 100), color: "#3B82F6" },
+    { name: t("dashboard.pending"), value: Math.round((1 - collectionRate) * 100), color: "#8B5CF6" },
   ]
 
   // Status breakdown pie chart
@@ -75,10 +75,10 @@ export function FinancialRatios() {
   const overdueCount = invoices.filter((i: any) => i.status === "overdue").length
   const totalInv = invoices.length || 1
   const expenseBreakdownData = [
-    { name: "Paid", value: Math.round((paidCount / totalInv) * 100), color: "#22C55E" },
-    { name: "Pending", value: Math.round((pendingCount / totalInv) * 100), color: "#FBBF24" },
-    { name: "Overdue", value: Math.round((overdueCount / totalInv) * 100), color: "#F43F5E" },
-    { name: "Maintenance", value: maintenance.length, color: "#60A5FA" },
+    { name: t("dashboard.paid"), value: Math.round((paidCount / totalInv) * 100), color: "#22C55E" },
+    { name: t("dashboard.pending"), value: Math.round((pendingCount / totalInv) * 100), color: "#FBBF24" },
+    { name: t("dashboard.overdue"), value: Math.round((overdueCount / totalInv) * 100), color: "#F43F5E" },
+    { name: t("common.maintenance"), value: maintenance.length, color: "#60A5FA" },
   ].filter(d => d.value > 0)
 
   const getRatioColor = (value: number, metric: keyof typeof benchmarks) => {
