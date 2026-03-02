@@ -66,11 +66,11 @@ export default function AddTenantScreen() {
 
   const handleSubmit = async () => {
     if (!firstName || !lastName || !email) {
-      Alert.alert('Error', 'Please fill in the required fields (name, email)')
+      Alert.alert(t('common.error'), t('tenants.requiredFieldsError'))
       return
     }
     if (!selectedPropertyId || !selectedUnitId) {
-      Alert.alert('Error', 'Please select a property and unit')
+      Alert.alert(t('common.error'), t('tenants.selectPropertyAndUnit'))
       return
     }
 
@@ -94,7 +94,7 @@ export default function AddTenantScreen() {
 
       router.back()
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setLoading(false)
     }
@@ -115,7 +115,7 @@ export default function AddTenantScreen() {
           onPress={() => { setShowPropertyPicker(!showPropertyPicker); setShowUnitPicker(false) }}
         >
           <Text style={[styles.pickerText, { color: selectedProperty ? colors.text : colors.textSecondary }]}>
-            {selectedProperty ? selectedProperty.name : 'Select a property...'}
+            {selectedProperty ? selectedProperty.name : t('tenants.selectProperty')}
           </Text>
           <ChevronDown size={18} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -123,7 +123,7 @@ export default function AddTenantScreen() {
         {showPropertyPicker && (
           <Card style={[styles.pickerList, { borderColor: colors.border }]}>
             {properties.length === 0 && (
-              <Text style={[styles.pickerEmpty, { color: colors.textSecondary }]}>No properties found. Add a property first.</Text>
+              <Text style={[styles.pickerEmpty, { color: colors.textSecondary }]}>{t('tenants.noProperties')}</Text>
             )}
             {properties.map((prop) => (
               <TouchableOpacity
@@ -150,7 +150,7 @@ export default function AddTenantScreen() {
           style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: selectedPropertyId ? 1 : 0.5 }]}
           onPress={() => {
             if (!selectedPropertyId) {
-              Alert.alert('', 'Please select a property first')
+              Alert.alert('', t('tenants.selectPropertyFirst'))
               return
             }
             setShowUnitPicker(!showUnitPicker)
@@ -158,7 +158,7 @@ export default function AddTenantScreen() {
           }}
         >
           <Text style={[styles.pickerText, { color: selectedUnit ? colors.text : colors.textSecondary }]}>
-            {selectedUnit ? `${selectedUnit.name}${selectedUnit.floor != null ? ` (Floor ${selectedUnit.floor})` : ''}` : 'Select a unit...'}
+            {selectedUnit ? `${selectedUnit.name}${selectedUnit.floor != null ? ` (${t('properties.floor')} ${selectedUnit.floor})` : ''}` : t('tenants.selectUnit')}
           </Text>
           <ChevronDown size={18} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -167,7 +167,7 @@ export default function AddTenantScreen() {
           <Card style={[styles.pickerList, { borderColor: colors.border }]}>
             {vacantUnits.length === 0 && (
               <Text style={[styles.pickerEmpty, { color: colors.textSecondary }]}>
-                {units.length === 0 ? 'No units in this property. Add units first.' : 'No vacant units available.'}
+                {units.length === 0 ? t('tenants.noUnits') : t('tenants.noVacantUnits')}
               </Text>
             )}
             {vacantUnits.map((unit) => (
@@ -182,9 +182,9 @@ export default function AddTenantScreen() {
                 <View style={styles.pickerItemContent}>
                   <Text style={[styles.pickerItemText, { color: colors.text }]}>{unit.name}</Text>
                   <Text style={[styles.pickerItemSub, { color: colors.textSecondary }]}>
-                    {unit.floor != null ? `Floor ${unit.floor}` : ''}
-                    {unit.size ? `${unit.floor != null ? ' · ' : ''}${unit.size} sqm` : ''}
-                    {unit.rent_amount ? `${(unit.floor != null || unit.size) ? ' · ' : ''}${unit.rent_amount} KWD` : ''}
+                    {unit.floor != null ? `${t('properties.floor')} ${unit.floor}` : ''}
+                    {unit.size ? `${unit.floor != null ? ' · ' : ''}${unit.size} ${t('tenants.sqm')}` : ''}
+                    {unit.rent_amount ? `${(unit.floor != null || unit.size) ? ' · ' : ''}${unit.rent_amount} ${t('tenants.kwd')}` : ''}
                   </Text>
                 </View>
                 {selectedUnitId === unit.id && <Check size={18} color={colors.primary} />}

@@ -23,7 +23,7 @@ export default function AddInvoiceScreen() {
 
   const handleSubmit = async () => {
     if (!amount || !dueDate || !tenantId || !propertyId || !unitId) {
-      Alert.alert('Error', 'Please fill in all required fields')
+      Alert.alert(t('common.error'), t('invoices.requiredFieldsError'))
       return
     }
 
@@ -38,11 +38,11 @@ export default function AddInvoiceScreen() {
         due_date: dueDate,
         amount: parseFloat(amount),
         description: description || null,
-        items: [{ description: description || 'Rent', amount: parseFloat(amount), sort_order: 0 }],
+        items: [{ description: description || t('tenants.monthlyRent'), amount: parseFloat(amount), sort_order: 0 }],
       })
       router.back()
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setLoading(false)
     }
@@ -52,9 +52,9 @@ export default function AddInvoiceScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Input label={t('invoices.invoiceNumber')} value={invoiceNumber} onChangeText={setInvoiceNumber} />
-        <Input label={`${t('invoices.tenantId')} *`} value={tenantId} onChangeText={setTenantId} placeholder="Tenant ID" />
-        <Input label={`${t('invoices.propertyId')} *`} value={propertyId} onChangeText={setPropertyId} placeholder="Property ID" />
-        <Input label={`${t('invoices.unitId')} *`} value={unitId} onChangeText={setUnitId} placeholder="Unit ID" />
+        <Input label={`${t('invoices.tenantId')} *`} value={tenantId} onChangeText={setTenantId} placeholder={t('invoices.tenantId')} />
+        <Input label={`${t('invoices.propertyId')} *`} value={propertyId} onChangeText={setPropertyId} placeholder={t('invoices.propertyId')} />
+        <Input label={`${t('invoices.unitId')} *`} value={unitId} onChangeText={setUnitId} placeholder={t('invoices.unitId')} />
         <Input label={`${t('invoices.amount')} *`} value={amount} onChangeText={setAmount} placeholder="0.000" keyboardType="decimal-pad" />
         <Input label={`${t('invoices.dueDate')} *`} value={dueDate} onChangeText={setDueDate} placeholder="YYYY-MM-DD" />
         <Input label={t('invoices.description')} value={description} onChangeText={setDescription} placeholder={t('invoices.description')} multiline />

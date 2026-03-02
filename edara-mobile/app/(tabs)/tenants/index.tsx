@@ -47,7 +47,7 @@ export default function TenantsListScreen() {
             </Text>
           </View>
           <Badge
-            label={item.status}
+            label={t(`status.${item.status}`)}
             variant={item.status === 'active' ? 'success' : 'warning'}
           />
         </View>

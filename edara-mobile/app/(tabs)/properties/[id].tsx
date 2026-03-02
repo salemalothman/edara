@@ -49,7 +49,7 @@ export default function PropertyDetailScreen() {
 
   const handleAddUnit = async () => {
     if (!newUnitName.trim()) {
-      Alert.alert('Error', 'Please enter a unit name')
+      Alert.alert(t('common.error'), t('properties.enterUnitName'))
       return
     }
     setAddingUnit(true)
@@ -69,14 +69,14 @@ export default function PropertyDetailScreen() {
       setShowAddUnit(false)
       loadData()
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setAddingUnit(false)
     }
   }
 
   const handleDeleteUnit = (unitId: string, unitName: string) => {
-    Alert.alert('Delete Unit', `Delete "${unitName}"?`, [
+    Alert.alert(t('properties.deleteUnit'), `${t('properties.deleteUnitConfirm')} "${unitName}"?`, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'), style: 'destructive',
@@ -129,7 +129,7 @@ export default function PropertyDetailScreen() {
         {/* Header */}
         <View style={styles.titleRow}>
           <Text style={[styles.name, { color: colors.text }]}>{property.name}</Text>
-          <Badge label={property.type} />
+          <Badge label={t(`properties.${property.type}`) !== `properties.${property.type}` ? t(`properties.${property.type}`) : property.type} />
         </View>
 
         <View style={styles.infoRow}>
@@ -142,7 +142,7 @@ export default function PropertyDetailScreen() {
         {property.size && (
           <View style={styles.infoRow}>
             <Maximize size={16} color={colors.textSecondary} />
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>{property.size} sqm</Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>{property.size} {t('properties.sqm')}</Text>
           </View>
         )}
 
@@ -172,28 +172,28 @@ export default function PropertyDetailScreen() {
             onPress={() => setShowAddUnit(!showAddUnit)}
           >
             <Plus size={18} color="#fff" />
-            <Text style={styles.addUnitBtnText}>Add Unit</Text>
+            <Text style={styles.addUnitBtnText}>{t('properties.addUnit')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Add Unit Form */}
         {showAddUnit && (
           <Card style={[styles.addUnitForm, { borderColor: colors.primary }]}>
-            <Input label="Unit Name *" value={newUnitName} onChangeText={setNewUnitName} placeholder="e.g. Unit 101" />
+            <Input label={`${t('properties.unitName')} *`} value={newUnitName} onChangeText={setNewUnitName} placeholder={t('properties.unitName')} />
             <View style={styles.addUnitRow}>
               <View style={styles.addUnitField}>
-                <Input label="Floor" value={newUnitFloor} onChangeText={setNewUnitFloor} placeholder="0" keyboardType="number-pad" />
+                <Input label={t('properties.floor')} value={newUnitFloor} onChangeText={setNewUnitFloor} placeholder="0" keyboardType="number-pad" />
               </View>
               <View style={styles.addUnitField}>
-                <Input label="Size (sqm)" value={newUnitSize} onChangeText={setNewUnitSize} placeholder="0" keyboardType="decimal-pad" />
+                <Input label={t('properties.sizeLabel')} value={newUnitSize} onChangeText={setNewUnitSize} placeholder="0" keyboardType="decimal-pad" />
               </View>
               <View style={styles.addUnitField}>
-                <Input label="Rent (KWD)" value={newUnitRent} onChangeText={setNewUnitRent} placeholder="0" keyboardType="decimal-pad" />
+                <Input label={t('properties.rentLabel')} value={newUnitRent} onChangeText={setNewUnitRent} placeholder="0" keyboardType="decimal-pad" />
               </View>
             </View>
             <View style={styles.addUnitActions}>
-              <Button title="Cancel" variant="secondary" onPress={() => setShowAddUnit(false)} style={{ flex: 1 }} />
-              <Button title="Add Unit" onPress={handleAddUnit} loading={addingUnit} style={{ flex: 1 }} />
+              <Button title={t('common.cancel')} variant="secondary" onPress={() => setShowAddUnit(false)} style={{ flex: 1 }} />
+              <Button title={t('properties.addUnit')} onPress={handleAddUnit} loading={addingUnit} style={{ flex: 1 }} />
             </View>
           </Card>
         )}
@@ -221,7 +221,7 @@ export default function PropertyDetailScreen() {
                 <Text style={[styles.unitName, { color: colors.text }]}>{unit.name}</Text>
                 {unit.floor != null && (
                   <Text style={[styles.unitMeta, { color: colors.textSecondary }]}>
-                    Floor {unit.floor}{unit.size ? ` · ${unit.size} sqm` : ''}
+                    {t('properties.floor')} {unit.floor}{unit.size ? ` · ${unit.size} ${t('properties.sqm')}` : ''}
                   </Text>
                 )}
               </View>
@@ -230,7 +230,8 @@ export default function PropertyDetailScreen() {
                   <Text style={[styles.unitRent, { color: colors.text }]}>{formatCurrency(unit.rent_amount)}</Text>
                 )}
                 <Badge
-                  label={unit.status}
+                  label={t(`status.${unit.status}`)}
+
                   variant={unit.status === 'occupied' ? 'success' : unit.status === 'vacant' ? 'warning' : 'danger'}
                 />
               </View>

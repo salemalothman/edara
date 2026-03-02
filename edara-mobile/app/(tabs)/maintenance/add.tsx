@@ -40,7 +40,7 @@ export default function AddMaintenanceScreen() {
 
   const handleSubmit = async () => {
     if (!title || !propertyId || !unitId || !description) {
-      Alert.alert('Error', 'Please fill in the required fields')
+      Alert.alert(t('common.error'), t('maintenance.requiredFieldsError'))
       return
     }
 
@@ -65,7 +65,7 @@ export default function AddMaintenanceScreen() {
       })
       router.back()
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setLoading(false)
     }
@@ -74,9 +74,9 @@ export default function AddMaintenanceScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Input label={`${t('maintenance.title')} *`} value={title} onChangeText={setTitle} placeholder={t('maintenance.title')} />
-        <Input label={`Property ID *`} value={propertyId} onChangeText={setPropertyId} placeholder="Property ID" />
-        <Input label={`Unit ID *`} value={unitId} onChangeText={setUnitId} placeholder="Unit ID" />
+        <Input label={`${t('maintenance.issueTitle')} *`} value={title} onChangeText={setTitle} placeholder={t('maintenance.issueTitlePlaceholder')} />
+        <Input label={`${t('maintenance.property')} *`} value={propertyId} onChangeText={setPropertyId} placeholder={t('invoices.propertyId')} />
+        <Input label={`${t('maintenance.unit')} *`} value={unitId} onChangeText={setUnitId} placeholder={t('invoices.unitId')} />
 
         <Text style={[styles.label, { color: colors.text }]}>{t('maintenance.category')}</Text>
         <View style={styles.chipRow}>
@@ -102,22 +102,22 @@ export default function AddMaintenanceScreen() {
           style={{ minHeight: 100, textAlignVertical: 'top' }}
         />
 
-        <Text style={[styles.label, { color: colors.text }]}>Contact Preference</Text>
+        <Text style={[styles.label, { color: colors.text }]}>{t('maintenance.contactPreference')}</Text>
         <View style={styles.chipRow}>
           {['phone', 'email', 'sms'].map((c) => (
-            <Button key={c} title={c} variant={contactPref === c ? 'primary' : 'secondary'} onPress={() => setContactPref(c)} style={styles.chip} />
+            <Button key={c} title={t(`maintenance.contactMethods.${c}`)} variant={contactPref === c ? 'primary' : 'secondary'} onPress={() => setContactPref(c)} style={styles.chip} />
           ))}
         </View>
 
         <Button
-          title="Add Photos"
+          title={t('maintenance.addPhotos')}
           variant="secondary"
           onPress={pickImages}
           icon={<Camera size={18} color={colors.text} />}
           style={styles.photoBtn}
         />
         {imageUris.length > 0 && (
-          <Text style={[styles.photoCount, { color: colors.textSecondary }]}>{imageUris.length} photo(s) selected</Text>
+          <Text style={[styles.photoCount, { color: colors.textSecondary }]}>{imageUris.length} {t('maintenance.photosSelected')}</Text>
         )}
 
         <Button title={t('maintenance.submitRequest')} onPress={handleSubmit} loading={loading} />

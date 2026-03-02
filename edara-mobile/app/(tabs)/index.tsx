@@ -18,10 +18,10 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
 export default function DashboardScreen() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency } = useFormatter()
   const router = useRouter()
@@ -121,7 +121,7 @@ export default function DashboardScreen() {
           <View>
             <Text style={[styles.greeting, { color: colors.text }]}>{t('dashboard.title')}</Text>
             <Text style={[styles.date, { color: colors.textSecondary }]}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString(language === 'ar' ? 'ar-KW' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
           <View style={styles.headerIcons}>
@@ -135,26 +135,26 @@ export default function DashboardScreen() {
         </View>
 
         {/* Financial Overview */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Financial Overview</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('dashboard.financialOverview')}</Text>
         <View style={styles.financialCards}>
           <Card style={[styles.finCard, { borderLeftColor: colors.success, borderLeftWidth: 3 }]}>
             <View style={styles.finCardHeader}>
               <TrendingUp size={18} color={colors.success} />
-              <Text style={[styles.finCardLabel, { color: colors.textSecondary }]}>Revenue</Text>
+              <Text style={[styles.finCardLabel, { color: colors.textSecondary }]}>{t('dashboard.revenue')}</Text>
             </View>
             <Text style={[styles.finCardValue, { color: colors.success }]}>{formatCurrency(totalRevenue)}</Text>
           </Card>
           <Card style={[styles.finCard, { borderLeftColor: colors.danger, borderLeftWidth: 3 }]}>
             <View style={styles.finCardHeader}>
               <TrendingDown size={18} color={colors.danger} />
-              <Text style={[styles.finCardLabel, { color: colors.textSecondary }]}>Expenses</Text>
+              <Text style={[styles.finCardLabel, { color: colors.textSecondary }]}>{t('dashboard.expenses')}</Text>
             </View>
             <Text style={[styles.finCardValue, { color: colors.danger }]}>{formatCurrency(totalExpenses)}</Text>
           </Card>
           <Card style={[styles.finCard, { borderLeftColor: colors.primary, borderLeftWidth: 3 }]}>
             <View style={styles.finCardHeader}>
               <DollarSign size={18} color={colors.primary} />
-              <Text style={[styles.finCardLabel, { color: colors.textSecondary }]}>Net Income</Text>
+              <Text style={[styles.finCardLabel, { color: colors.textSecondary }]}>{t('dashboard.netIncome')}</Text>
             </View>
             <Text style={[styles.finCardValue, { color: totalRevenue - totalExpenses >= 0 ? colors.success : colors.danger }]}>
               {formatCurrency(totalRevenue - totalExpenses)}
@@ -164,17 +164,17 @@ export default function DashboardScreen() {
 
         {/* Revenue vs Expenses Bar Chart */}
         <Card style={styles.chartCard}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Revenue vs Expenses</Text>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Last 6 months</Text>
+          <Text style={[styles.chartTitle, { color: colors.text }]}>{t('dashboard.revenueVsExpenses')}</Text>
+          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>{t('dashboard.last6Months')}</Text>
 
           <View style={styles.chartLegend}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-              <Text style={[styles.legendText, { color: colors.textSecondary }]}>Revenue</Text>
+              <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t('dashboard.revenue')}</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
-              <Text style={[styles.legendText, { color: colors.textSecondary }]}>Expenses</Text>
+              <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t('dashboard.expenses')}</Text>
             </View>
           </View>
 
@@ -193,7 +193,7 @@ export default function DashboardScreen() {
                     </View>
                   </View>
                   <Text style={[styles.chartLabel, { color: colors.textSecondary, fontWeight: monthIdx === currentMonth ? '700' : '400' }]}>
-                    {MONTH_LABELS[monthIdx]}
+                    {t(`dashboard.months.${MONTH_KEYS[monthIdx]}`)}
                   </Text>
                 </View>
               )
@@ -203,8 +203,8 @@ export default function DashboardScreen() {
 
         {/* Invoice Status Breakdown */}
         <Card style={styles.chartCard}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Invoice Status</Text>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Current year breakdown</Text>
+          <Text style={[styles.chartTitle, { color: colors.text }]}>{t('dashboard.invoiceStatus')}</Text>
+          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>{t('dashboard.currentYearBreakdown')}</Text>
 
           {/* Horizontal stacked bar */}
           <View style={styles.stackedBarContainer}>
@@ -230,17 +230,17 @@ export default function DashboardScreen() {
           <View style={styles.statusLegend}>
             <View style={styles.statusItem}>
               <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Paid</Text>
+              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>{t('dashboard.paid')}</Text>
               <Text style={[styles.statusValue, { color: colors.text }]}>{formatCurrency(revenueByStatus.paid)}</Text>
             </View>
             <View style={styles.statusItem}>
               <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
-              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Pending</Text>
+              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>{t('dashboard.pending')}</Text>
               <Text style={[styles.statusValue, { color: colors.text }]}>{formatCurrency(revenueByStatus.pending)}</Text>
             </View>
             <View style={styles.statusItem}>
               <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
-              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>Overdue</Text>
+              <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>{t('dashboard.overdue')}</Text>
               <Text style={[styles.statusValue, { color: colors.text }]}>{formatCurrency(revenueByStatus.overdue)}</Text>
             </View>
           </View>
@@ -248,8 +248,8 @@ export default function DashboardScreen() {
 
         {/* Occupancy Chart */}
         <Card style={styles.chartCard}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Occupancy</Text>
-          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>{units.length} total units</Text>
+          <Text style={[styles.chartTitle, { color: colors.text }]}>{t('dashboard.occupancy')}</Text>
+          <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>{units.length} {t('dashboard.totalUnits')}</Text>
 
           <View style={styles.occupancyRow}>
             {/* Circular progress indicator */}
@@ -269,17 +269,17 @@ export default function DashboardScreen() {
             <View style={styles.occupancyDetails}>
               <View style={styles.occupancyItem}>
                 <View style={[styles.occupancyDot, { backgroundColor: colors.success }]} />
-                <Text style={[styles.occupancyLabel, { color: colors.textSecondary }]}>Occupied</Text>
+                <Text style={[styles.occupancyLabel, { color: colors.textSecondary }]}>{t('dashboard.occupied')}</Text>
                 <Text style={[styles.occupancyValue, { color: colors.text }]}>{occupiedUnits}</Text>
               </View>
               <View style={styles.occupancyItem}>
                 <View style={[styles.occupancyDot, { backgroundColor: colors.warning }]} />
-                <Text style={[styles.occupancyLabel, { color: colors.textSecondary }]}>Vacant</Text>
+                <Text style={[styles.occupancyLabel, { color: colors.textSecondary }]}>{t('dashboard.vacant')}</Text>
                 <Text style={[styles.occupancyValue, { color: colors.text }]}>{units.length - occupiedUnits}</Text>
               </View>
               <View style={styles.occupancyItem}>
                 <View style={[styles.occupancyDot, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.occupancyLabel, { color: colors.textSecondary }]}>Properties</Text>
+                <Text style={[styles.occupancyLabel, { color: colors.textSecondary }]}>{t('navigation.properties')}</Text>
                 <Text style={[styles.occupancyValue, { color: colors.text }]}>{properties.length}</Text>
               </View>
             </View>
@@ -322,7 +322,7 @@ export default function DashboardScreen() {
                   {formatCurrency(invoice.amount)}
                 </Text>
                 <Badge
-                  label={invoice.status}
+                  label={t(`status.${invoice.status}`)}
                   variant={
                     invoice.status === 'paid' ? 'success' :
                     invoice.status === 'overdue' ? 'danger' : 'warning'

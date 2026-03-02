@@ -52,7 +52,7 @@ export default function InvoicesListScreen() {
           <View style={styles.invoiceRight}>
             <Text style={[styles.amount, { color: colors.text }]}>{formatCurrency(item.amount)}</Text>
             <Badge
-              label={item.status}
+              label={t(`status.${item.status}`)}
               variant={item.status === 'paid' ? 'success' : item.status === 'overdue' ? 'danger' : 'warning'}
             />
           </View>

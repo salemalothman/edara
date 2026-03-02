@@ -50,13 +50,13 @@ export default function AddPropertyScreen() {
 
   const handleSubmit = async () => {
     if (!name || !address || !city) {
-      Alert.alert('Error', 'Please fill in the required fields (name, address, city)')
+      Alert.alert(t('common.error'), t('properties.requiredFieldsError'))
       return
     }
 
     const validUnits = unitEntries.filter(u => u.name.trim())
     if (validUnits.length === 0) {
-      Alert.alert('Error', 'Please add at least one unit with a name')
+      Alert.alert(t('common.error'), t('properties.addUnitNameError'))
       return
     }
 
@@ -88,7 +88,7 @@ export default function AddPropertyScreen() {
 
       router.back()
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setLoading(false)
     }
@@ -120,7 +120,7 @@ export default function AddPropertyScreen() {
         <Input label={`${t('properties.city')} *`} value={city} onChangeText={setCity} placeholder={t('properties.city')} />
         <Input label={t('properties.state')} value={state} onChangeText={setState} placeholder={t('properties.state')} />
         <Input label={t('properties.zip')} value={zip} onChangeText={setZip} placeholder={t('properties.zip')} keyboardType="number-pad" />
-        <Input label={t('properties.totalSize')} value={size} onChangeText={setSize} placeholder="sqm" keyboardType="decimal-pad" />
+        <Input label={t('properties.totalSize')} value={size} onChangeText={setSize} placeholder={t('properties.sqm')} keyboardType="decimal-pad" />
         <Input
           label={t('properties.description')}
           value={description}
@@ -138,14 +138,14 @@ export default function AddPropertyScreen() {
           </Text>
           <TouchableOpacity style={[styles.addUnitBtn, { backgroundColor: colors.primary }]} onPress={addUnitEntry}>
             <Plus size={18} color="#fff" />
-            <Text style={styles.addUnitText}>Add Unit</Text>
+            <Text style={styles.addUnitText}>{t('properties.addUnit')}</Text>
           </TouchableOpacity>
         </View>
 
         {unitEntries.map((unit, index) => (
           <Card key={index} style={[styles.unitCard, { borderColor: colors.border }]}>
             <View style={styles.unitHeader}>
-              <Text style={[styles.unitLabel, { color: colors.text }]}>Unit {index + 1}</Text>
+              <Text style={[styles.unitLabel, { color: colors.text }]}>{t('properties.unit')} {index + 1}</Text>
               {unitEntries.length > 1 && (
                 <TouchableOpacity onPress={() => removeUnitEntry(index)}>
                   <Trash2 size={18} color={colors.danger} />
@@ -153,15 +153,15 @@ export default function AddPropertyScreen() {
               )}
             </View>
             <Input
-              label="Unit Name *"
+              label={`${t('properties.unitName')} *`}
               value={unit.name}
               onChangeText={(v) => updateUnitEntry(index, 'name', v)}
-              placeholder="e.g. Unit 101, Apt A"
+              placeholder={t('properties.unitName')}
             />
             <View style={styles.unitRow}>
               <View style={styles.unitField}>
                 <Input
-                  label="Floor"
+                  label={t('properties.floor')}
                   value={unit.floor}
                   onChangeText={(v) => updateUnitEntry(index, 'floor', v)}
                   placeholder="0"
@@ -170,7 +170,7 @@ export default function AddPropertyScreen() {
               </View>
               <View style={styles.unitField}>
                 <Input
-                  label="Size (sqm)"
+                  label={t('properties.sizeLabel')}
                   value={unit.size}
                   onChangeText={(v) => updateUnitEntry(index, 'size', v)}
                   placeholder="0"
@@ -179,7 +179,7 @@ export default function AddPropertyScreen() {
               </View>
               <View style={styles.unitField}>
                 <Input
-                  label="Rent (KWD)"
+                  label={t('properties.rentLabel')}
                   value={unit.rent_amount}
                   onChangeText={(v) => updateUnitEntry(index, 'rent_amount', v)}
                   placeholder="0"

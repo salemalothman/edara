@@ -48,7 +48,7 @@ export default function TenantDetailScreen() {
             <Text style={styles.avatarText}>{tenant.first_name[0]}{tenant.last_name[0]}</Text>
           </View>
           <Text style={[styles.name, { color: colors.text }]}>{tenant.first_name} {tenant.last_name}</Text>
-          <Badge label={tenant.status} variant={tenant.status === 'active' ? 'success' : 'warning'} />
+          <Badge label={t(`status.${tenant.status}`)} variant={tenant.status === 'active' ? 'success' : 'warning'} />
         </View>
 
         {/* Contact */}

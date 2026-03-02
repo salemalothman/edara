@@ -34,7 +34,7 @@ export default function InvoiceDetailScreen() {
       await updateInvoice(id!, { status: 'paid' })
       setInvoice({ ...invoice, status: 'paid' })
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setUpdating(false)
     }
@@ -57,7 +57,7 @@ export default function InvoiceDetailScreen() {
         <View style={styles.header}>
           <Text style={[styles.invoiceNum, { color: colors.text }]}>{invoice.invoice_number}</Text>
           <Badge
-            label={invoice.status}
+            label={t(`status.${invoice.status}`)}
             variant={invoice.status === 'paid' ? 'success' : invoice.status === 'overdue' ? 'danger' : 'warning'}
           />
         </View>

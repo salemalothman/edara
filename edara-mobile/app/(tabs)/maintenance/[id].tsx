@@ -34,7 +34,7 @@ export default function MaintenanceDetailScreen() {
       await updateMaintenanceRequest(id!, { status })
       setRequest({ ...request, status })
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert(t('common.error'), err.message)
     } finally {
       setUpdating(false)
     }
@@ -57,7 +57,7 @@ export default function MaintenanceDetailScreen() {
         <View style={styles.badges}>
           <Badge label={request.category} />
           <Badge label={request.priority} variant={request.priority === 'high' ? 'danger' : request.priority === 'medium' ? 'warning' : 'default'} />
-          <Badge label={request.status} variant={request.status === 'completed' ? 'success' : 'warning'} />
+          <Badge label={t(`status.${request.status}`)} variant={request.status === 'completed' ? 'success' : 'warning'} />
         </View>
 
         <Card style={styles.detailsCard}>

@@ -46,7 +46,7 @@ export default function MaintenanceListScreen() {
         </Text>
         <View style={styles.requestFooter}>
           <Badge label={item.category} />
-          <Badge label={item.status} variant={statusVariant(item.status)} />
+          <Badge label={t(`status.${item.status}`)} variant={statusVariant(item.status)} />
           <Text style={[styles.date, { color: colors.textSecondary }]}>{formatDate(item.created_at)}</Text>
         </View>
       </Card>
@@ -70,7 +70,7 @@ export default function MaintenanceListScreen() {
               onPress={() => setStatusFilter(item)}
             >
               <Text style={{ color: statusFilter === item ? '#fff' : colors.text, fontSize: 13, fontWeight: '500' }}>
-                {item === 'all' ? t('common.all') : item.replace('_', ' ')}
+                {item === 'all' ? t('common.all') : t(`status.${item}`)}
               </Text>
             </TouchableOpacity>
           )}
