@@ -33,6 +33,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "edara",
     "plugins": [
       "expo-router",
       "expo-secure-store",
