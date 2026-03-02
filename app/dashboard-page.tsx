@@ -15,7 +15,6 @@ import { useState } from "react"
 import { FinancialOverview } from "@/components/financial-metrics/financial-overview"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { InteractiveButton } from "@/components/ui/interactive-button"
-import { FeatureHighlights } from "@/components/feature-highlights"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchUnits } from "@/lib/services/units"
 import { fetchInvoices } from "@/lib/services/invoices"
@@ -127,9 +126,7 @@ export default function DashboardPage() {
         <DashboardHeader
           showDatePicker={true}
           showExport={true}
-          showAddButton={true}
-          addButtonLabel={t("properties.addProperty")}
-          onAddButtonClick={handleAddProperty}
+          showAddButton={false}
           onExport={handleExport}
         />
 
@@ -208,7 +205,6 @@ export default function DashboardPage() {
                 </Card>
               </div>
               <ModuleCards />
-              <FeatureHighlights />
             </TabsContent>
 
             {/* Other tab contents remain the same */}
