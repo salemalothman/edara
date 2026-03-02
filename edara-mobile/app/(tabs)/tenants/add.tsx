@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, Keyboard } from 'react-native'
 import { useRouter } from 'expo-router'
 import { ChevronDown, Check } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
@@ -102,7 +102,7 @@ export default function AddTenantScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss}>
         <Input label={`${t('tenants.firstName')} *`} value={firstName} onChangeText={setFirstName} placeholder={t('tenants.firstName')} />
         <Input label={`${t('tenants.lastName')} *`} value={lastName} onChangeText={setLastName} placeholder={t('tenants.lastName')} />
         <Input label={`${t('tenants.email')} *`} value={email} onChangeText={setEmail} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" />

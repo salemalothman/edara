@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, Keyboard } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Plus, Trash2 } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
@@ -100,6 +100,7 @@ export default function AddPropertyScreen() {
         style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={Keyboard.dismiss}
       >
         <Input label={`${t('properties.propertyName')} *`} value={name} onChangeText={setName} placeholder={t('properties.propertyName')} />
 

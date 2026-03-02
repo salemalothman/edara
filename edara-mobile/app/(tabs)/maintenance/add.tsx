@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { Camera } from 'lucide-react-native'
@@ -73,7 +73,7 @@ export default function AddMaintenanceScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss}>
         <Input label={`${t('maintenance.issueTitle')} *`} value={title} onChangeText={setTitle} placeholder={t('maintenance.issueTitlePlaceholder')} />
         <Input label={`${t('maintenance.property')} *`} value={propertyId} onChangeText={setPropertyId} placeholder={t('invoices.propertyId')} />
         <Input label={`${t('maintenance.unit')} *`} value={unitId} onChangeText={setUnitId} placeholder={t('invoices.unitId')} />

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
@@ -50,7 +50,7 @@ export default function AddInvoiceScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss}>
         <Input label={t('invoices.invoiceNumber')} value={invoiceNumber} onChangeText={setInvoiceNumber} />
         <Input label={`${t('invoices.tenantId')} *`} value={tenantId} onChangeText={setTenantId} placeholder={t('invoices.tenantId')} />
         <Input label={`${t('invoices.propertyId')} *`} value={propertyId} onChangeText={setPropertyId} placeholder={t('invoices.propertyId')} />
