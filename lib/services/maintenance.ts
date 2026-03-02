@@ -23,6 +23,7 @@ export async function insertMaintenanceRequest(request: {
   available_dates?: string | null
   contact_preference?: string
   image_urls?: string[]
+  cost?: number | null
 }) {
   const { data, error } = await supabase
     .from('maintenance_requests')
@@ -39,6 +40,7 @@ export async function updateMaintenanceRequest(id: string, updates: {
   priority?: string
   status?: string
   description?: string
+  cost?: number | null
 }) {
   const { data, error } = await supabase
     .from('maintenance_requests')

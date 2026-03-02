@@ -45,7 +45,8 @@
     "invoices": "الفواتير",
     "maintenance": "الصيانة",
     "reports": "التقارير",
-    "properties": "العقارات"
+    "properties": "العقارات",
+    "expenses": "المصروفات"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -392,7 +393,39 @@
     "medium": "متوسطة",
     "high": "عالية",
     "addPhotos": "إضافة صور",
-    "photosSelected": "صورة مختارة"
+    "photosSelected": "صورة مختارة",
+    "cost": "التكلفة التقديرية (د.ك)"
+  },
+  "expenses": {
+    "title": "المصروفات",
+    "addExpense": "إضافة مصروف",
+    "totalExpenses": "إجمالي المصروفات",
+    "manualExpenses": "مصروفات يدوية",
+    "maintenanceCosts": "تكاليف الصيانة",
+    "combinedTotal": "الإجمالي الكلي",
+    "description": "الوصف",
+    "amount": "المبلغ (د.ك)",
+    "category": "الفئة",
+    "property": "العقار",
+    "date": "التاريخ",
+    "manual": "يدوي",
+    "maintenance": "صيانة",
+    "noExpenses": "لا توجد مصروفات",
+    "requiredFieldsError": "يرجى ملء الوصف والمبلغ",
+    "guard": "حارس",
+    "cleaning": "تنظيف",
+    "utilities": "مرافق",
+    "repairs": "إصلاحات",
+    "insurance": "تأمين",
+    "management": "إدارة",
+    "other": "أخرى",
+    "source": "المصدر",
+    "plumbing": "سباكة",
+    "electrical": "كهرباء",
+    "hvac": "تكييف",
+    "appliance": "أجهزة",
+    "structural": "هيكلي",
+    "pest": "مكافحة حشرات"
   },
   "reports": {
     "title": "التقارير",

@@ -2,8 +2,8 @@ import { useCallback, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Building2, Users, FileText, Wrench, Bell, Settings, TrendingUp, TrendingDown, DollarSign } from 'lucide-react-native'
-// Building2, Users, FileText, Wrench used in quick actions
+import { Building2, Users, FileText, Receipt, Wrench, Bell, Settings, TrendingUp, TrendingDown, DollarSign } from 'lucide-react-native'
+// Building2, Users, FileText, Receipt, Wrench used in quick actions
 import { useLanguage } from '../../contexts/language-context'
 import { useTheme } from '../../contexts/theme-context'
 import { useFormatter } from '../../hooks/use-formatter'
@@ -12,6 +12,7 @@ import { fetchProperties } from '../../lib/services/properties'
 import { fetchUnits } from '../../lib/services/units'
 import { fetchInvoices } from '../../lib/services/invoices'
 import { fetchMaintenanceRequests } from '../../lib/services/maintenance'
+import { fetchExpenses } from '../../lib/services/expenses'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -30,11 +31,12 @@ export default function DashboardScreen() {
   const { data: units, loading: unitsLoading, refetch: refetchUnits } = useSupabaseQuery(fetchUnits)
   const { data: invoices, loading: invLoading, refetch: refetchInv } = useSupabaseQuery(fetchInvoices)
   const { data: maintenance, loading: maintLoading, refetch: refetchMaint } = useSupabaseQuery(fetchMaintenanceRequests)
+  const { data: expensesData, loading: expLoading, refetch: refetchExp } = useSupabaseQuery(fetchExpenses)
 
-  const loading = propsLoading || unitsLoading || invLoading || maintLoading
+  const loading = propsLoading || unitsLoading || invLoading || maintLoading || expLoading
 
   useFocusEffect(useCallback(() => {
-    refetchProps(); refetchUnits(); refetchInv(); refetchMaint()
+    refetchProps(); refetchUnits(); refetchInv(); refetchMaint(); refetchExp()
   }, []))
 
   const onRefresh = useCallback(() => {
@@ -42,6 +44,7 @@ export default function DashboardScreen() {
     refetchUnits()
     refetchInv()
     refetchMaint()
+    refetchExp()
   }, [])
 
   // Calculate KPIs
@@ -80,11 +83,19 @@ export default function DashboardScreen() {
       }
     })
 
-    // Maintenance costs as expenses
+    // Maintenance costs as expenses (completed with cost)
     maintenance.forEach((m: any) => {
       const date = new Date(m.created_at)
-      if (date.getFullYear() === currentYear && m.cost) {
+      if (date.getFullYear() === currentYear && m.status === 'completed' && m.cost) {
         expenses[date.getMonth()] += m.cost
+      }
+    })
+
+    // Manual expenses
+    expensesData.forEach((e: any) => {
+      const date = new Date(e.date || e.created_at)
+      if (date.getFullYear() === currentYear) {
+        expenses[date.getMonth()] += e.amount || 0
       }
     })
 
@@ -95,7 +106,7 @@ export default function DashboardScreen() {
       totalExpenses: expenses.reduce((a, b) => a + b, 0),
       revenueByStatus: { paid, pending, overdue },
     }
-  }, [invoices, maintenance])
+  }, [invoices, maintenance, expensesData])
 
   const recentInvoices = invoices.slice(0, 5)
 
@@ -297,6 +308,7 @@ export default function DashboardScreen() {
             { label: t('navigation.properties'), icon: Building2, route: '/(tabs)/properties' as const },
             { label: t('navigation.tenants'), icon: Users, route: '/(tabs)/tenants' as const },
             { label: t('navigation.invoices'), icon: FileText, route: '/(tabs)/invoices' as const },
+            { label: t('navigation.expenses'), icon: Receipt, route: '/(tabs)/expenses' as const },
             { label: t('navigation.maintenance'), icon: Wrench, route: '/(tabs)/maintenance' as const },
           ].map((item) => (
             <TouchableOpacity

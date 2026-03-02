@@ -45,7 +45,8 @@
     "invoices": "Invoices",
     "maintenance": "Maintenance",
     "reports": "Reports",
-    "properties": "Properties"
+    "properties": "Properties",
+    "expenses": "Expenses"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -392,7 +393,39 @@
     "medium": "Medium",
     "high": "High",
     "addPhotos": "Add Photos",
-    "photosSelected": "photo(s) selected"
+    "photosSelected": "photo(s) selected",
+    "cost": "Estimated Cost (KWD)"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "addExpense": "Add Expense",
+    "totalExpenses": "Total Expenses",
+    "manualExpenses": "Manual Expenses",
+    "maintenanceCosts": "Maintenance Costs",
+    "combinedTotal": "Combined Total",
+    "description": "Description",
+    "amount": "Amount (KWD)",
+    "category": "Category",
+    "property": "Property",
+    "date": "Date",
+    "manual": "Manual",
+    "maintenance": "Maintenance",
+    "noExpenses": "No expenses found",
+    "requiredFieldsError": "Please fill in description and amount",
+    "guard": "Guard",
+    "cleaning": "Cleaning",
+    "utilities": "Utilities",
+    "repairs": "Repairs",
+    "insurance": "Insurance",
+    "management": "Management",
+    "other": "Other",
+    "source": "Source",
+    "plumbing": "Plumbing",
+    "electrical": "Electrical",
+    "hvac": "HVAC",
+    "appliance": "Appliance",
+    "structural": "Structural",
+    "pest": "Pest Control"
   },
   "reports": {
     "title": "Reports",

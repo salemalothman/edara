@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building, Home, Users, CreditCard } from "lucide-react"
+import { Building, Home, Users, CreditCard, Receipt } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFormatter } from "@/hooks/use-formatter"
 import { useLanguage } from "@/hooks/use-language"
@@ -10,6 +10,7 @@ import { fetchProperties } from "@/lib/services/properties"
 import { fetchTenants } from "@/lib/services/tenants"
 import { fetchUnits } from "@/lib/services/units"
 import { fetchInvoices } from "@/lib/services/invoices"
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
 
 export function PropertyStats() {
   const { t } = useLanguage()
@@ -19,8 +20,10 @@ export function PropertyStats() {
   const { data: tenants, loading: loadingTenants } = useSupabaseQuery(fetchTenants)
   const { data: units, loading: loadingUnits } = useSupabaseQuery(fetchUnits)
   const { data: invoices, loading: loadingInvoices } = useSupabaseQuery(fetchInvoices)
+  const { data: expensesData, loading: loadingExp } = useSupabaseQuery(fetchExpenses)
+  const { data: maintCosts, loading: loadingMaintCosts } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
 
-  const loading = loadingProps || loadingTenants || loadingUnits || loadingInvoices
+  const loading = loadingProps || loadingTenants || loadingUnits || loadingInvoices || loadingExp || loadingMaintCosts
 
   const vacantUnits = units.filter((u: any) => u.status === "vacant" || !u.status).length
   const currentMonth = new Date().toISOString().substring(0, 7)
@@ -28,8 +31,15 @@ export function PropertyStats() {
     .filter((inv: any) => inv.status === "paid" && inv.issue_date?.substring(0, 7) === currentMonth)
     .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
 
+  const totalRevenue = invoices
+    .filter((inv: any) => inv.status === "paid")
+    .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
+  const totalManualExp = expensesData.reduce((s: number, e: any) => s + (e.amount || 0), 0)
+  const totalMaintExp = maintCosts.reduce((s: number, m: any) => s + (m.cost || 0), 0)
+  const totalExpenses = totalManualExp + totalMaintExp
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
@@ -64,13 +74,25 @@ export function PropertyStats() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("financial.totalRevenue")}</CardTitle>
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12" /> : formatCurrency(monthlyRevenue)}</div>
+          <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12" /> : formatCurrency(totalRevenue)}</div>
           <p className="text-xs text-muted-foreground">
-            {invoices.filter((inv: any) => inv.status === "paid" && inv.issue_date?.substring(0, 7) === currentMonth).length} paid invoices this month
+            {formatCurrency(monthlyRevenue)} {t("expenses.thisMonth")}
+          </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{t("financial.totalExpenses")}</CardTitle>
+          <Receipt className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-12" /> : formatCurrency(totalExpenses)}</div>
+          <p className="text-xs text-muted-foreground">
+            {t("expenses.manual")}: {formatCurrency(totalManualExp)} + {t("expenses.maintenance")}: {formatCurrency(totalMaintExp)}
           </p>
         </CardContent>
       </Card>

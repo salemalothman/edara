@@ -220,6 +220,7 @@ export interface Database {
           contact_preference: string
           image_urls: string[]
           status: string
+          cost: number | null
           created_at: string
           updated_at: string
         }
@@ -235,10 +236,34 @@ export interface Database {
           contact_preference?: string
           image_urls?: string[]
           status?: string
+          cost?: number | null
           created_at?: string
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['maintenance_requests']['Insert']>
+      }
+      expenses: {
+        Row: {
+          id: string
+          description: string
+          amount: number
+          category: string
+          property_id: string | null
+          date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          description: string
+          amount: number
+          category?: string
+          property_id?: string | null
+          date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['expenses']['Insert']>
       }
     }
     Views: Record<string, never>

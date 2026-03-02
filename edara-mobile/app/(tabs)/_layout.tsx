@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { Home, Building2, Users, FileText, Wrench } from 'lucide-react-native'
+import { Home, Building2, Users, FileText, Receipt, Wrench } from 'lucide-react-native'
 import { useLanguage } from '../../contexts/language-context'
 import { useTheme } from '../../contexts/theme-context'
 
@@ -50,6 +50,14 @@ export default function TabLayout() {
           title: t('navigation.invoices'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="expenses"
+        options={{
+          title: t('navigation.expenses'),
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Receipt size={size} color={color} />,
         }}
       />
       <Tabs.Screen

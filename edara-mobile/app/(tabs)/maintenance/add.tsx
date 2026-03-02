@@ -18,6 +18,7 @@ export default function AddMaintenanceScreen() {
   const [priority, setPriority] = useState('medium')
   const [description, setDescription] = useState('')
   const [contactPref, setContactPref] = useState('phone')
+  const [cost, setCost] = useState('')
   const [imageUris, setImageUris] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -87,6 +88,7 @@ export default function AddMaintenanceScreen() {
         description,
         contact_preference: contactPref,
         image_urls: uploadedUrls,
+        cost: cost ? parseFloat(cost) : null,
       })
       router.back()
     } catch (err: any) {
@@ -208,6 +210,8 @@ export default function AddMaintenanceScreen() {
           numberOfLines={4}
           style={{ minHeight: 100, textAlignVertical: 'top' }}
         />
+
+        <Input label={t('expenses.amount')} value={cost} onChangeText={setCost} placeholder="0.000" keyboardType="decimal-pad" />
 
         <Text style={[styles.label, { color: colors.text }]}>{t('maintenance.contactPreference')}</Text>
         <View style={styles.chipRow}>
