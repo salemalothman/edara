@@ -320,7 +320,8 @@
     "propertyId": "Property ID",
     "unitId": "Unit ID",
     "createInvoice": "Create Invoice",
-    "invoiceDetails": "Invoice Details"
+    "invoiceDetails": "Invoice Details",
+    "paidDate": "Paid Date"
   },
   "maintenance": {
     "title": "Maintenance",

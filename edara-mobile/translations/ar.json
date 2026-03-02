@@ -320,7 +320,8 @@
     "propertyId": "رقم العقار",
     "unitId": "رقم الوحدة",
     "createInvoice": "إنشاء فاتورة",
-    "invoiceDetails": "تفاصيل الفاتورة"
+    "invoiceDetails": "تفاصيل الفاتورة",
+    "paidDate": "تاريخ الدفع"
   },
   "maintenance": {
     "title": "الصيانة",
