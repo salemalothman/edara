@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Image } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus, MapPin } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
@@ -20,6 +20,8 @@ export default function PropertiesListScreen() {
   const router = useRouter()
 
   const { data: properties, loading, refetch } = useSupabaseQuery(fetchProperties)
+
+  useFocusEffect(useCallback(() => { refetch() }, []))
 
   const filtered = properties.filter((p: any) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||

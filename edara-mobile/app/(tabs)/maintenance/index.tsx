@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus, AlertTriangle, Clock, CheckCircle } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
@@ -22,6 +22,8 @@ export default function MaintenanceListScreen() {
   const router = useRouter()
 
   const { data: requests, loading, refetch } = useSupabaseQuery(fetchMaintenanceRequests)
+
+  useFocusEffect(useCallback(() => { refetch() }, []))
 
   const filtered = requests.filter((req: any) => {
     const matchesSearch = req.title.toLowerCase().includes(search.toLowerCase())

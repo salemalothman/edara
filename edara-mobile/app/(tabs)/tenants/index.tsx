@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Linking } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus, Phone, Mail } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
@@ -21,6 +21,8 @@ export default function TenantsListScreen() {
   const router = useRouter()
 
   const { data: tenants, loading, refetch } = useSupabaseQuery(fetchTenants)
+
+  useFocusEffect(useCallback(() => { refetch() }, []))
 
   const filtered = tenants.filter((tenant: any) => {
     const fullName = `${tenant.first_name} ${tenant.last_name}`.toLowerCase()

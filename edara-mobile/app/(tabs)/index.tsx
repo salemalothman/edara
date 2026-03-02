@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Building2, Users, FileText, Wrench, Bell, Settings, TrendingUp, TrendingDown, DollarSign } from 'lucide-react-native'
 // Building2, Users, FileText, Wrench used in quick actions
 import { useLanguage } from '../../contexts/language-context'
@@ -32,6 +32,10 @@ export default function DashboardScreen() {
   const { data: maintenance, loading: maintLoading, refetch: refetchMaint } = useSupabaseQuery(fetchMaintenanceRequests)
 
   const loading = propsLoading || unitsLoading || invLoading || maintLoading
+
+  useFocusEffect(useCallback(() => {
+    refetchProps(); refetchUnits(); refetchInv(); refetchMaint()
+  }, []))
 
   const onRefresh = useCallback(() => {
     refetchProps()

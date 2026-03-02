@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
@@ -22,6 +22,8 @@ export default function InvoicesListScreen() {
   const router = useRouter()
 
   const { data: invoices, loading, refetch } = useSupabaseQuery(fetchInvoices)
+
+  useFocusEffect(useCallback(() => { refetch() }, []))
 
   // Summary stats
   const totalDue = invoices.filter((i: any) => i.status === 'pending').reduce((s: number, i: any) => s + i.amount, 0)
