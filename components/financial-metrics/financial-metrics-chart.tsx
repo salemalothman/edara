@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useState } from "react"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchInvoices } from "@/lib/services/invoices"
-import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -21,11 +21,12 @@ export function FinancialMetricsChart() {
   const [timeRange, setTimeRange] = useState("12months")
 
   const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
-  const { data: maintenance, loading: loadingMaint } = useSupabaseQuery(fetchMaintenanceRequests)
+  const { data: expensesData, loading: loadingExp } = useSupabaseQuery(fetchExpenses)
+  const { data: maintCosts, loading: loadingMaint } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
 
-  const loading = loadingInv || loadingMaint
+  const loading = loadingInv || loadingExp || loadingMaint
 
-  // Build monthly data from real invoices
+  // Build monthly data from real invoices + expenses
   const now = new Date()
   const monthCount = timeRange === "3months" ? 3 : timeRange === "6months" ? 6 : 12
   const allData = []
@@ -34,20 +35,22 @@ export function FinancialMetricsChart() {
     const key = d.toISOString().substring(0, 7)
     const label = MONTHS[d.getMonth()]
 
-    const monthInvoices = invoices.filter((inv: any) => inv.issue_date?.substring(0, 7) === key)
-    const revenue = monthInvoices
-      .filter((inv: any) => inv.status === "paid")
-      .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
-    const pending = monthInvoices
-      .filter((inv: any) => inv.status !== "paid")
+    const revenue = invoices
+      .filter((inv: any) => inv.status === "paid" && inv.issue_date?.substring(0, 7) === key)
       .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
 
-    const maintCount = maintenance.filter((m: any) => m.created_at?.substring(0, 7) === key).length
-    const noi = revenue // no expense tracking yet, so NOI = revenue
-    const totalBilled = revenue + pending
-    const roi = totalBilled > 0 ? revenue / totalBilled : 0
+    const manualExp = expensesData
+      .filter((e: any) => (e.date || e.created_at)?.substring(0, 7) === key)
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
+    const maintExp = maintCosts
+      .filter((m: any) => m.created_at?.substring(0, 7) === key)
+      .reduce((sum: number, m: any) => sum + (m.cost || 0), 0)
+    const expenses = manualExp + maintExp
 
-    allData.push({ month: label, revenue, expenses: pending, noi, roi })
+    const noi = revenue - expenses
+    const roi = revenue > 0 ? noi / revenue : 0
+
+    allData.push({ month: label, revenue, expenses, noi, roi })
   }
 
   const totalRevenue = allData.reduce((sum, item) => sum + item.revenue, 0)
@@ -149,10 +152,12 @@ export function FinancialMetricsChart() {
               tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
             />
             <Tooltip
-              formatter={(value: number, name: string) => {
-                if (name === "roi") return [formatPercentage(value), t("financial.roi")]
+              // @ts-ignore recharts Formatter type mismatch
+              formatter={(value: any, name: any) => {
+                const v = Number(value) || 0
+                if (name === "roi") return [formatPercentage(v), t("financial.roi")]
                 return [
-                  formatCurrency(value),
+                  formatCurrency(v),
                   name === "revenue" ? t("financial.revenue")
                     : name === "expenses" ? t("financial.expenses")
                     : t("financial.noi"),

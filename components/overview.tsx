@@ -6,7 +6,7 @@ import { useTheme } from "next-themes"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchInvoices } from "@/lib/services/invoices"
-import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -15,11 +15,12 @@ export function Overview() {
   const { theme } = useTheme()
 
   const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
-  const { data: maintenance, loading: loadingMaint } = useSupabaseQuery(fetchMaintenanceRequests)
+  const { data: expensesData, loading: loadingExp } = useSupabaseQuery(fetchExpenses)
+  const { data: maintCosts, loading: loadingMaint } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
 
-  const loading = loadingInv || loadingMaint
+  const loading = loadingInv || loadingExp || loadingMaint
 
-  // Build monthly data from real invoices for last 6 months
+  // Build monthly data from real invoices + expenses for last 6 months
   const now = new Date()
   const chartData = []
   for (let i = 5; i >= 0; i--) {
@@ -27,14 +28,18 @@ export function Overview() {
     const key = d.toISOString().substring(0, 7) // "YYYY-MM"
     const label = MONTHS[d.getMonth()]
 
-    const monthInvoices = invoices.filter((inv: any) => inv.issue_date?.substring(0, 7) === key)
-    const income = monthInvoices
-      .filter((inv: any) => inv.status === "paid")
+    const income = invoices
+      .filter((inv: any) => inv.status === "paid" && inv.issue_date?.substring(0, 7) === key)
       .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
 
-    const maintenanceCount = maintenance.filter((m: any) => m.created_at?.substring(0, 7) === key).length
+    const manualExp = expensesData
+      .filter((e: any) => (e.date || e.created_at)?.substring(0, 7) === key)
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
+    const maintExp = maintCosts
+      .filter((m: any) => m.created_at?.substring(0, 7) === key)
+      .reduce((sum: number, m: any) => sum + (m.cost || 0), 0)
 
-    chartData.push({ name: label, income, maintenance: maintenanceCount })
+    chartData.push({ name: label, income, expenses: manualExp + maintExp })
   }
 
   const colors = {
@@ -69,9 +74,7 @@ export function Overview() {
           width={40}
         />
         <Tooltip
-          formatter={(value: number, name: string) =>
-            name === "income" ? formatCurrency(value) : `${value} requests`
-          }
+          formatter={(value: any, name: string) => formatCurrency(Number(value) || 0)}
           labelFormatter={(label) => `Month: ${label}`}
           contentStyle={{
             backgroundColor: theme === "dark" ? "#1E293B" : "#FFFFFF",
@@ -84,9 +87,10 @@ export function Overview() {
         />
         <Legend
           wrapperStyle={{ paddingTop: "1rem" }}
-          formatter={(value) => <span style={{ color: colors.text }}>{value === "income" ? "Rental Income" : "Maintenance"}</span>}
+          formatter={(value) => <span style={{ color: colors.text }}>{value === "income" ? "Rental Income" : "Expenses"}</span>}
         />
         <Bar dataKey="income" name="income" fill={colors.income} radius={[4, 4, 0, 0]} barSize={24} />
+        <Bar dataKey="expenses" name="expenses" fill={colors.expenses} radius={[4, 4, 0, 0]} barSize={24} />
       </BarChart>
     </ResponsiveContainer>
   )
