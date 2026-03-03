@@ -51,20 +51,20 @@ export default function InvoicesContent() {
     try {
       await updateInvoice(id, { status: newStatus })
       refetch()
-      toast({ title: t("common.success") || "Success", description: `Invoice marked as ${newStatus}` })
+      toast({ title: t("common.success"), description: `${t("invoices.invoiceMarkedAs")} ${statusLabel(newStatus)}` })
     } catch (err: any) {
-      toast({ title: t("common.error") || "Error", description: err?.message || "Failed to update status", variant: "destructive" })
+      toast({ title: t("common.error"), description: err?.message || t("common.error"), variant: "destructive" })
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this invoice?")) return
+    if (!window.confirm(t("invoices.confirmDelete"))) return
     try {
       await deleteInvoice(id)
       refetch()
-      toast({ title: t("common.success") || "Success", description: "Invoice deleted" })
+      toast({ title: t("common.success"), description: t("invoices.invoiceDeleted") })
     } catch (err: any) {
-      toast({ title: t("common.error") || "Error", description: err?.message || "Failed to delete", variant: "destructive" })
+      toast({ title: t("common.error"), description: err?.message || t("common.error"), variant: "destructive" })
     }
   }
 
@@ -107,7 +107,7 @@ export default function InvoicesContent() {
   }, [invoices, monthFiltered, monthFilter])
 
   const handleExport = () => {
-    const headers = ["Invoice #", "Tenant", "Property/Unit", "Issue Date", "Due Date", "Amount", "Status"]
+    const headers = [t("invoices.invoiceNumber"), t("invoices.tenant"), t("dashboard.propertyUnit"), t("invoices.issueDate"), t("invoices.dueDate"), t("invoices.amount"), t("common.status")]
     const rows = filteredInvoices.map((inv: any) => [
       inv.invoice_number,
       inv.tenant ? `${inv.tenant.first_name} ${inv.tenant.last_name}` : "—",
@@ -146,7 +146,7 @@ export default function InvoicesContent() {
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2 rtl:space-x-reverse">
           <Input
-            placeholder="Search invoices..."
+            placeholder={t("invoices.searchInvoices")}
             className="h-9 w-[300px]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -156,22 +156,22 @@ export default function InvoicesContent() {
       <Card>
         <CardHeader className="p-4">
           <CardTitle>
-            {activeTab === "all" ? "All Invoices" : statusLabel(activeTab)}
+            {activeTab === "all" ? t("invoices.allInvoices") : statusLabel(activeTab)}
             {monthFilter !== "all" && <span className="text-muted-foreground font-normal"> — {fmtMonthLabel(monthFilter)}</span>}
           </CardTitle>
-          <CardDescription>Manage your invoices and payment records</CardDescription>
+          <CardDescription>{t("invoices.manageInvoices")}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Property/Unit</TableHead>
-                <TableHead>Issue Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("invoices.invoiceNumber")}</TableHead>
+                <TableHead>{t("invoices.tenant")}</TableHead>
+                <TableHead>{t("dashboard.propertyUnit")}</TableHead>
+                <TableHead>{t("invoices.issueDate")}</TableHead>
+                <TableHead>{t("invoices.dueDate")}</TableHead>
+                <TableHead>{t("invoices.amount")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
                 <TableHead className="text-right rtl:text-left">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -187,13 +187,13 @@ export default function InvoicesContent() {
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-red-600">
-                    Error loading invoices: {error}
+                    {t("invoices.errorLoading")}: {error}
                   </TableCell>
                 </TableRow>
               ) : filteredInvoices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    No invoices found
+                    {t("dashboard.noInvoicesFound")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -224,27 +224,27 @@ export default function InvoicesContent() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
+                            <span className="sr-only">{t("dashboard.openMenu")}</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Change Status</DropdownMenuLabel>
+                          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">{t("dashboard.changeStatus")}</DropdownMenuLabel>
                           {invoice.status !== "paid" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, "paid")}>
-                              Mark as Paid
+                              {t("invoices.markAsPaid")}
                             </DropdownMenuItem>
                           )}
                           {invoice.status !== "pending" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, "pending")}>
-                              Mark as Pending
+                              {t("invoices.markAsPending")}
                             </DropdownMenuItem>
                           )}
                           {invoice.status !== "overdue" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, "overdue")}>
-                              Mark as Overdue
+                              {t("invoices.markAsOverdue")}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -252,7 +252,7 @@ export default function InvoicesContent() {
                             className="text-red-600"
                             onClick={() => handleDelete(invoice.id)}
                           >
-                            Delete Invoice
+                            {t("invoices.deleteInvoice")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -282,10 +282,10 @@ export default function InvoicesContent() {
         <CalendarRange className="h-4 w-4 text-muted-foreground" />
         <Select value={monthFilter} onValueChange={setMonthFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by month" />
+            <SelectValue placeholder={t("invoices.filterByMonth")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Months</SelectItem>
+            <SelectItem value="all">{t("invoices.allMonths")}</SelectItem>
             {availableMonths.map((m) => (
               <SelectItem key={m} value={m}>{fmtMonthLabel(m)}</SelectItem>
             ))}
@@ -293,7 +293,7 @@ export default function InvoicesContent() {
         </Select>
         {monthFilter !== "all" && (
           <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setMonthFilter("all")}>
-            Clear
+            {t("invoices.clear")}
           </Button>
         )}
       </div>
@@ -304,38 +304,38 @@ export default function InvoicesContent() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                {monthFilter !== "all" ? fmtMonthLabel(monthFilter) : "Total"} Collected
+                {t("invoices.totalCollected")}
               </CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{formatCurrency(monthlySummary.paid)}</div>
-              <p className="text-xs text-muted-foreground mt-1">{monthlySummary.paidCount} of {monthlySummary.total} invoices paid</p>
+              <p className="text-xs text-muted-foreground mt-1">{monthlySummary.paidCount} {t("dashboard.of")} {monthlySummary.total} {t("dashboard.invoicesPaid")}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dashboard.pending")}</CardTitle>
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">{formatCurrency(monthlySummary.pending)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Awaiting payment</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("invoices.awaitingPayment")}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dashboard.overdue")}</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{formatCurrency(monthlySummary.overdue)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Past due date</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("invoices.pastDueDate")}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Billed</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("invoices.totalBilled")}</CardTitle>
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
@@ -359,7 +359,7 @@ export default function InvoicesContent() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex justify-between">
           <TabsList>
-            <TabsTrigger value="all">All Invoices</TabsTrigger>
+            <TabsTrigger value="all">{t("invoices.allInvoices")}</TabsTrigger>
             <TabsTrigger value="paid">{t("status.paid")}</TabsTrigger>
             <TabsTrigger value="pending">{t("status.pending")}</TabsTrigger>
             <TabsTrigger value="overdue">{t("status.overdue")}</TabsTrigger>

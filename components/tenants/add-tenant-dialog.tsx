@@ -60,8 +60,8 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
 
     if (!formData.firstName || !formData.lastName || !formData.email) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: t("validation.error"),
+        description: t("validation.requiredFields"),
         variant: "destructive",
       })
       return
@@ -85,16 +85,16 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
       onSuccess?.()
 
       toast({
-        title: "Success",
-        description: "Tenant added successfully",
+        title: t("common.success"),
+        description: t("tenants.tenantAdded"),
       })
 
       setFormData(initialFormData)
       setOpen(false)
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to add tenant. Please try again.",
+        title: t("common.error"),
+        description: t("tenants.addError"),
         variant: "destructive",
       })
     } finally {
@@ -113,26 +113,26 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t("tenants.addTenant")}</DialogTitle>
-            <DialogDescription>Enter the tenant's information. Click save when you're done.</DialogDescription>
+            <DialogDescription>{t("tenants.addTenantDesc")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {/* Name */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="firstName">{t("tenants.firstName")} *</Label>
                 <Input
                   id="firstName"
-                  placeholder="First name"
+                  placeholder={t("tenants.firstNamePlaceholder")}
                   value={formData.firstName}
                   onChange={handleChange}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
+                <Label htmlFor="lastName">{t("tenants.lastName")} *</Label>
                 <Input
                   id="lastName"
-                  placeholder="Last name"
+                  placeholder={t("tenants.lastNamePlaceholder")}
                   value={formData.lastName}
                   onChange={handleChange}
                   required
@@ -143,26 +143,26 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Contact */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t("tenants.email")} *</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Email address"
+                  placeholder={t("tenants.emailPlaceholder")}
                   value={formData.email}
                   onChange={handleChange}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Phone number" value={formData.phone} onChange={handleChange} />
+                <Label htmlFor="phone">{t("tenants.phone")}</Label>
+                <Input id="phone" placeholder={t("tenants.phonePlaceholder")} value={formData.phone} onChange={handleChange} />
               </div>
             </div>
 
             {/* Property & Unit */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Property</Label>
+                <Label>{t("dashboard.property")}</Label>
                 <Select
                   value={formData.property}
                   onValueChange={(value) =>
@@ -170,7 +170,7 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select property" />
+                    <SelectValue placeholder={t("tenants.selectProperty")} />
                   </SelectTrigger>
                   <SelectContent>
                     {properties.map((p: any) => (
@@ -180,14 +180,14 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Unit</Label>
+                <Label>{t("tenants.unit")}</Label>
                 <Select
                   value={formData.unit}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, unit: value }))}
                   disabled={!formData.property}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={formData.property ? "Select unit" : "Select property first"} />
+                    <SelectValue placeholder={formData.property ? t("tenants.selectUnit") : t("tenants.selectPropertyFirst")} />
                   </SelectTrigger>
                   <SelectContent>
                     {units.map((u: any) => (
@@ -201,7 +201,7 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="moveInDate">Move-in Date</Label>
+                <Label htmlFor="moveInDate">{t("tenants.moveInDate")}</Label>
                 <Input
                   id="moveInDate"
                   type="date"
@@ -210,7 +210,7 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="leaseEndDate">Lease End Date</Label>
+                <Label htmlFor="leaseEndDate">{t("tenants.leaseEndDate")}</Label>
                 <Input
                   id="leaseEndDate"
                   type="date"
@@ -223,7 +223,7 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Rent & Deposit */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="rent">Monthly Rent (KWD)</Label>
+                <Label htmlFor="rent">{t("tenants.monthlyRent")}</Label>
                 <Input
                   id="rent"
                   type="number"
@@ -235,7 +235,7 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="deposit">Deposit (KWD)</Label>
+                <Label htmlFor="deposit">{t("tenants.deposit")}</Label>
                 <Input
                   id="deposit"
                   type="number"
@@ -253,7 +253,7 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
               {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : t("common.save")}
+              {isSubmitting ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>
