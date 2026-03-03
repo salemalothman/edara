@@ -21,12 +21,14 @@ export async function fetchNotifications() {
     .order('created_at', { ascending: false })
 
   if (error) {
+    // If table doesn't exist, return empty array
+    if (error.code === 'PGRST205' || error.message?.includes('schema cache')) return []
     // Fallback without joins
     const { data: plain, error: plainErr } = await supabase
       .from('notifications')
       .select('*')
       .order('created_at', { ascending: false })
-    if (plainErr) throw plainErr
+    if (plainErr) return []
     return plain
   }
   return data
@@ -46,7 +48,7 @@ export async function markNotificationRead(id: string) {
     .from('notifications')
     .update({ is_read: true })
     .eq('id', id)
-  if (error) throw error
+  if (error && error.code !== 'PGRST205') throw error
 }
 
 export async function markAllRead() {
@@ -54,17 +56,17 @@ export async function markAllRead() {
     .from('notifications')
     .update({ is_read: true })
     .eq('is_read', false)
-  if (error) throw error
+  if (error && error.code !== 'PGRST205') throw error
 }
 
 export async function deleteNotification(id: string) {
   const { error } = await supabase.from('notifications').delete().eq('id', id)
-  if (error) throw error
+  if (error && error.code !== 'PGRST205') throw error
 }
 
 export async function clearAllNotifications() {
   const { error } = await supabase.from('notifications').delete().neq('id', '')
-  if (error) throw error
+  if (error && error.code !== 'PGRST205') throw error
 }
 
 export async function generateNotifications() {
@@ -73,9 +75,10 @@ export async function generateNotifications() {
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
   // Fetch existing notification related_ids to avoid duplicates
-  const { data: existing } = await supabase
+  const { data: existing, error: existingErr } = await supabase
     .from('notifications')
     .select('related_id')
+  if (existingErr?.code === 'PGRST205') throw new Error('Notifications table not found. Please run the migration SQL in Supabase Dashboard.')
   const existingIds = new Set((existing || []).map((n: any) => n.related_id))
 
   const newNotifications: any[] = []
@@ -189,7 +192,10 @@ export async function generateNotifications() {
   // Insert all new notifications
   if (newNotifications.length > 0) {
     const { error } = await supabase.from('notifications').insert(newNotifications)
-    if (error) throw error
+    if (error) {
+      if (error.code === 'PGRST205') throw new Error('Notifications table not found. Please run the migration SQL in Supabase Dashboard.')
+      throw error
+    }
   }
 
   return newNotifications.length

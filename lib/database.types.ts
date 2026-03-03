@@ -265,6 +265,54 @@ export interface Database {
         }
         Update: Partial<Database['public']['Tables']['expenses']['Insert']>
       }
+      notifications: {
+        Row: {
+          id: string
+          type: string
+          title: string
+          message: string
+          tenant_id: string | null
+          property_id: string | null
+          related_id: string | null
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          type: string
+          title: string
+          message: string
+          tenant_id?: string | null
+          property_id?: string | null
+          related_id?: string | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['notifications']['Insert']>
+      }
+      whatsapp_reminders: {
+        Row: {
+          id: string
+          invoice_id: string
+          tenant_id: string
+          phone: string
+          message: string
+          status: string
+          sent_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          tenant_id: string
+          phone: string
+          message: string
+          status?: string
+          sent_at?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['whatsapp_reminders']['Insert']>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

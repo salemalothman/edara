@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
+import { useLanguage } from "@/hooks/use-language"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import {
   generateWhatsAppReminders,
@@ -19,6 +20,7 @@ import {
 
 export function WhatsAppReminders() {
   const { toast } = useToast()
+  const { t } = useLanguage()
   const { data: reminderLogs, loading: loadingLogs, refetch: refetchLogs } = useSupabaseQuery(fetchWhatsAppReminders)
   const [scanning, setScanning] = useState(false)
   const [pendingReminders, setPendingReminders] = useState<any[]>([])
@@ -31,17 +33,17 @@ export function WhatsAppReminders() {
       setPendingReminders(reminders)
       if (reminders.length === 0) {
         toast({
-          title: "No Reminders Needed",
-          description: "No pending invoices due within 5 days, or all tenants have already been reminded.",
+          title: t("whatsapp.noRemindersNeeded"),
+          description: t("whatsapp.noRemindersDesc"),
         })
       } else {
         toast({
-          title: "Reminders Found",
-          description: `${reminders.length} tenant${reminders.length > 1 ? "s" : ""} with payments due within 5 days`,
+          title: t("whatsapp.remindersFound"),
+          description: `${reminders.length} ${t("whatsapp.tenantsWithPaymentsDue")}`,
         })
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err?.message || "Failed to scan invoices", variant: "destructive" })
+      toast({ title: t("whatsapp.error"), description: err?.message || t("whatsapp.scanError"), variant: "destructive" })
     } finally {
       setScanning(false)
     }
@@ -56,17 +58,15 @@ export function WhatsAppReminders() {
         reminder.phone,
         reminder.message
       )
-      // Open WhatsApp in a new tab
       window.open(link, "_blank")
-      // Remove from pending list
       setPendingReminders((prev) => prev.filter((r) => r.invoiceId !== reminder.invoiceId))
       refetchLogs()
       toast({
-        title: "WhatsApp Opened",
-        description: `Reminder for ${reminder.tenantName} opened in WhatsApp`,
+        title: t("whatsapp.whatsappOpened"),
+        description: `${t("whatsapp.reminderFor")} ${reminder.tenantName}`,
       })
     } catch (err: any) {
-      toast({ title: "Error", description: err?.message || "Failed to send reminder", variant: "destructive" })
+      toast({ title: t("whatsapp.error"), description: err?.message || t("whatsapp.sendError"), variant: "destructive" })
     } finally {
       setSendingId(null)
     }
@@ -75,7 +75,6 @@ export function WhatsAppReminders() {
   const handleSendAll = async () => {
     for (const reminder of pendingReminders) {
       await handleSend(reminder)
-      // Small delay between opens to avoid browser blocking popups
       await new Promise((r) => setTimeout(r, 800))
     }
   }
@@ -88,7 +87,7 @@ export function WhatsAppReminders() {
   }
 
   const handleResend = (log: any) => {
-    const tenantName = log.tenant ? `${log.tenant.first_name} ${log.tenant.last_name}` : "Tenant"
+    const tenantName = log.tenant ? `${log.tenant.first_name} ${log.tenant.last_name}` : t("whatsapp.tenant")
     const message = log.message || buildReminderMessage(
       tenantName,
       log.invoice?.invoice_number || "",
@@ -106,13 +105,13 @@ export function WhatsAppReminders() {
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-green-600" />
-            WhatsApp Payment Reminders
+            {t("whatsapp.title")}
           </h3>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleScan} disabled={scanning}>
-            <RefreshCw className={`mr-1 h-4 w-4 ${scanning ? "animate-spin" : ""}`} />
-            {scanning ? "Scanning..." : "Scan Due Invoices"}
+            <RefreshCw className={`mr-1 rtl:ml-1 rtl:mr-0 h-4 w-4 ${scanning ? "animate-spin" : ""}`} />
+            {scanning ? t("whatsapp.scanning") : t("whatsapp.scanDueInvoices")}
           </Button>
         </div>
       </div>
@@ -121,8 +120,7 @@ export function WhatsAppReminders() {
       <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
         <CardContent className="p-4">
           <p className="text-sm text-green-800 dark:text-green-200">
-            This tool scans for pending invoices due within <strong>5 days</strong> and lets you send
-            payment reminders to tenants via WhatsApp. Click &quot;Scan Due Invoices&quot; to find tenants that need reminders.
+            {t("whatsapp.infoText")}
           </p>
         </CardContent>
       </Card>
@@ -133,12 +131,12 @@ export function WhatsAppReminders() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Pending Reminders</CardTitle>
-                <CardDescription>{pendingReminders.length} tenant{pendingReminders.length > 1 ? "s" : ""} to remind</CardDescription>
+                <CardTitle className="text-base">{t("whatsapp.pendingReminders")}</CardTitle>
+                <CardDescription>{pendingReminders.length} {t("whatsapp.tenantsToRemind")}</CardDescription>
               </div>
               {pendingReminders.length > 1 && (
                 <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleSendAll}>
-                  <Send className="mr-1 h-4 w-4" /> Send All via WhatsApp
+                  <Send className="mr-1 rtl:ml-1 rtl:mr-0 h-4 w-4" /> {t("whatsapp.sendAllViaWhatsApp")}
                 </Button>
               )}
             </div>
@@ -156,13 +154,13 @@ export function WhatsAppReminders() {
                       <Phone className="h-3 w-3" /> {r.phone}
                     </span>
                     <span className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" /> {r.amount.toFixed(3)} KWD
+                      <DollarSign className="h-3 w-3" /> {r.amount.toFixed(3)} {t("whatsapp.kwd")}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> Due: {r.dueDate}
+                      <Calendar className="h-3 w-3" /> {t("whatsapp.due")}: {r.dueDate}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Invoice: {r.invoiceNumber}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("whatsapp.invoice")}: {r.invoiceNumber}</p>
                 </div>
                 <Button
                   size="sm"
@@ -170,8 +168,8 @@ export function WhatsAppReminders() {
                   onClick={() => handleSend(r)}
                   disabled={sendingId === r.invoiceId}
                 >
-                  <Send className="mr-1 h-3.5 w-3.5" />
-                  {sendingId === r.invoiceId ? "Sending..." : "Send"}
+                  <Send className="mr-1 rtl:ml-1 rtl:mr-0 h-3.5 w-3.5" />
+                  {sendingId === r.invoiceId ? t("whatsapp.sending") : t("whatsapp.send")}
                 </Button>
               </div>
             ))}
@@ -182,8 +180,8 @@ export function WhatsAppReminders() {
       {/* Reminder History */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Reminder History</CardTitle>
-          <CardDescription>Previously sent WhatsApp reminders</CardDescription>
+          <CardTitle className="text-base">{t("whatsapp.reminderHistory")}</CardTitle>
+          <CardDescription>{t("whatsapp.reminderHistoryDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {loadingLogs ? (
@@ -201,15 +199,15 @@ export function WhatsAppReminders() {
           ) : reminderLogs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <MessageSquare className="h-10 w-10 mb-3 opacity-50" />
-              <p className="text-sm font-medium">No reminders sent yet</p>
-              <p className="text-xs mt-1">Scan for due invoices to start sending reminders</p>
+              <p className="text-sm font-medium">{t("whatsapp.noRemindersSent")}</p>
+              <p className="text-xs mt-1">{t("whatsapp.noRemindersSentHint")}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {reminderLogs.map((log: any) => {
                 const tenantName = log.tenant
                   ? `${log.tenant.first_name} ${log.tenant.last_name}`
-                  : "Unknown"
+                  : t("whatsapp.unknown")
                 return (
                   <div
                     key={log.id}
@@ -228,7 +226,7 @@ export function WhatsAppReminders() {
                                 : "bg-yellow-100 text-yellow-800 text-xs"
                           }
                         >
-                          {log.status}
+                          {log.status === "sent" ? t("whatsapp.sent") : log.status === "failed" ? t("whatsapp.failed") : t("whatsapp.pending")}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -238,7 +236,7 @@ export function WhatsAppReminders() {
                         {log.invoice && (
                           <>
                             <span>{log.invoice.invoice_number}</span>
-                            <span>{log.invoice.amount?.toFixed(3)} KWD</span>
+                            <span>{log.invoice.amount?.toFixed(3)} {t("whatsapp.kwd")}</span>
                           </>
                         )}
                         {log.sent_at && (
@@ -254,7 +252,7 @@ export function WhatsAppReminders() {
                         size="icon"
                         className="h-7 w-7 text-green-600"
                         onClick={() => handleResend(log)}
-                        title="Resend via WhatsApp"
+                        title={t("whatsapp.resend")}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                       </Button>
@@ -263,7 +261,7 @@ export function WhatsAppReminders() {
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-red-600"
                         onClick={() => handleDeleteLog(log.id)}
-                        title="Delete"
+                        title={t("whatsapp.delete")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>

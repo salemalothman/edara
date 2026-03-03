@@ -1,8 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { LanguageProvider } from "@/contexts/language-context"
-import { ThemeProvider } from "@/components/theme-provider"
 import { Favicon } from "@/components/favicon"
+import { Providers } from "@/components/providers"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -22,9 +21,7 @@ export default function RootLayout({
         <Favicon />
       </head>
       <body suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          <LanguageProvider>{children}</LanguageProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
