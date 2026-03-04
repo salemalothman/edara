@@ -15,6 +15,7 @@ import { fetchProperties } from "@/lib/services/properties"
 import { fetchUnits } from "@/lib/services/units"
 import { fetchInvoices } from "@/lib/services/invoices"
 import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
+import { fetchTenants } from "@/lib/services/tenants"
 
 export function PropertyPerformanceTable() {
   const { t } = useLanguage()
@@ -25,19 +26,25 @@ export function PropertyPerformanceTable() {
 
   const { data: properties, loading: l1 } = useSupabaseQuery(fetchProperties)
   const { data: units, loading: l2 } = useSupabaseQuery(fetchUnits)
+  const { data: tenants, loading: l5 } = useSupabaseQuery(fetchTenants)
   const { data: invoices, loading: l3 } = useSupabaseQuery(fetchInvoices)
   const { data: maintenance, loading: l4 } = useSupabaseQuery(fetchMaintenanceRequests)
 
-  const loading = l1 || l2 || l3 || l4
+  const loading = l1 || l2 || l3 || l4 || l5
 
   const performanceData = useMemo(() => {
+    const activeTenantUnitIds = new Set(
+      tenants
+        .filter((t: any) => t.unit_id && t.status !== "former")
+        .map((t: any) => t.unit_id)
+    )
     return properties.map((prop: any) => {
       const propUnits = units.filter((u: any) => u.property_id === prop.id)
       const propInvoices = invoices.filter((inv: any) => inv.property_id === prop.id)
       const propMaint = maintenance.filter((m: any) => m.property_id === prop.id)
 
       const totalUnits = propUnits.length
-      const occupiedUnits = propUnits.filter((u: any) => u.status === "occupied").length
+      const occupiedUnits = propUnits.filter((u: any) => activeTenantUnitIds.has(u.id)).length
       const occupancyRate = totalUnits > 0 ? occupiedUnits / totalUnits : 0
 
       const totalCollected = propInvoices
@@ -75,7 +82,7 @@ export function PropertyPerformanceTable() {
         performanceScore: Math.min(100, Math.max(0, score)),
       }
     })
-  }, [properties, units, invoices, maintenance])
+  }, [properties, units, tenants, invoices, maintenance])
 
   const filteredProperties = performanceData.filter(
     (p: any) =>

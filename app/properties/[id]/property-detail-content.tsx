@@ -44,8 +44,13 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
     )
   }
 
-  const occupiedUnits = units.filter((u: any) => u.status === "occupied").length
-  const vacantUnits = units.filter((u: any) => u.status === "vacant").length
+  const occupiedUnitIds = new Set(
+    tenants
+      .filter((t: any) => t.unit_id && t.status !== "former")
+      .map((t: any) => t.unit_id)
+  )
+  const occupiedUnits = units.filter((u: any) => occupiedUnitIds.has(u.id)).length
+  const vacantUnits = units.length - occupiedUnits
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">

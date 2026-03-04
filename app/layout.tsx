@@ -16,9 +16,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <Favicon />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var lang = localStorage.getItem('language');
+                if (lang === 'ar') {
+                  document.documentElement.dir = 'rtl';
+                  document.documentElement.lang = 'ar';
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>

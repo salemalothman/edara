@@ -12,7 +12,7 @@ import { fetchUnits } from "@/lib/services/units"
 import { fetchInvoices } from "@/lib/services/invoices"
 import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
 
-export function PropertyStats() {
+export function PropertyStats({ period = "6m" }: { period?: string }) {
   const { t } = useLanguage()
   const { formatCurrency } = useFormatter()
 
@@ -25,17 +25,38 @@ export function PropertyStats() {
 
   const loading = loadingProps || loadingTenants || loadingUnits || loadingInvoices || loadingExp || loadingMaintCosts
 
-  const vacantUnits = units.filter((u: any) => u.status === "vacant" || !u.status).length
-  const currentMonth = new Date().toISOString().substring(0, 7)
+  // A unit is occupied if it has an active tenant assigned to it
+  const occupiedUnitIds = new Set(
+    tenants
+      .filter((t: any) => t.unit_id && t.status !== "former")
+      .map((t: any) => t.unit_id)
+  )
+  const vacantUnits = units.filter((u: any) => !occupiedUnitIds.has(u.id)).length
+
+  // Calculate period start date for filtering
+  const now = new Date()
+  const monthCount = period === "1m" ? 1 : period === "3m" ? 3 : 6
+  const periodStart = new Date(now.getFullYear(), now.getMonth() - monthCount + 1, 1)
+  const periodStartKey = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`
+
+  const isInPeriod = (dateStr: string | undefined) => {
+    if (!dateStr) return false
+    return dateStr.substring(0, 7) >= periodStartKey
+  }
+
+  const totalRevenue = invoices
+    .filter((inv: any) => inv.status === "paid" && isInPeriod(inv.issue_date))
+    .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
+  const currentMonth = now.toISOString().substring(0, 7)
   const monthlyRevenue = invoices
     .filter((inv: any) => inv.status === "paid" && inv.issue_date?.substring(0, 7) === currentMonth)
     .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
-
-  const totalRevenue = invoices
-    .filter((inv: any) => inv.status === "paid")
-    .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0)
-  const totalManualExp = expensesData.reduce((s: number, e: any) => s + (e.amount || 0), 0)
-  const totalMaintExp = maintCosts.reduce((s: number, m: any) => s + (m.cost || 0), 0)
+  const totalManualExp = expensesData
+    .filter((e: any) => isInPeriod(e.date || e.created_at))
+    .reduce((s: number, e: any) => s + (e.amount || 0), 0)
+  const totalMaintExp = maintCosts
+    .filter((m: any) => isInPeriod(m.created_at))
+    .reduce((s: number, m: any) => s + (m.cost || 0), 0)
   const totalExpenses = totalManualExp + totalMaintExp
 
   return (

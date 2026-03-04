@@ -27,6 +27,7 @@ interface FormData {
   zip: string
   units: string
   size: string
+  currentPropertyValue: string
   description: string
   amenities: {
     parking: boolean
@@ -57,6 +58,7 @@ export function EditPropertyContent({ propertyId }: { propertyId: string }) {
     zip: "",
     units: "",
     size: "",
+    currentPropertyValue: "",
     description: "",
     amenities: {
       parking: false,
@@ -79,6 +81,7 @@ export function EditPropertyContent({ propertyId }: { propertyId: string }) {
         zip: property.zip || "",
         units: String(property.units || ""),
         size: property.size ? String(property.size) : "",
+        currentPropertyValue: property.current_property_value ? String(property.current_property_value) : "",
         description: property.description || "",
         amenities: {
           parking: property.amenities?.parking || false,
@@ -148,14 +151,16 @@ export function EditPropertyContent({ propertyId }: { propertyId: string }) {
         zip: formData.zip,
         units: parseInt(formData.units),
         size: formData.size ? parseFloat(formData.size) : null,
+        current_property_value: formData.currentPropertyValue ? parseFloat(formData.currentPropertyValue) : null,
         description: formData.description || null,
         amenities: formData.amenities,
         image_urls: imageUrls,
       })
       toast({ title: t("properties.propertyUpdated") || "Property updated successfully" })
       router.push(`/properties/${propertyId}`)
-    } catch {
-      toast({ title: t("properties.updateError") || "Failed to update property", variant: "destructive" })
+    } catch (err: any) {
+      console.error("Update property error:", err)
+      toast({ title: t("properties.updateError") || "Failed to update property", description: err?.message || "", variant: "destructive" })
     } finally {
       setIsSubmitting(false)
     }
@@ -239,6 +244,10 @@ export function EditPropertyContent({ propertyId }: { propertyId: string }) {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="currentPropertyValue">{t("properties.currentPropertyValue")}</Label>
+              <Input id="currentPropertyValue" type="number" min="0" step="0.01" placeholder={t("properties.currentPropertyValuePlaceholder")} value={formData.currentPropertyValue} onChange={handleInputChange} />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="description">{t("properties.description")}</Label>
               <Textarea id="description" value={formData.description} onChange={handleInputChange} />
             </div>
@@ -277,7 +286,7 @@ export function EditPropertyContent({ propertyId }: { propertyId: string }) {
                     <img src={url} alt={`Property ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
                     <button
                       type="button"
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 rtl:right-auto rtl:left-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removeExistingImage(index)}
                     >
                       <X className="h-4 w-4" />
@@ -294,7 +303,7 @@ export function EditPropertyContent({ propertyId }: { propertyId: string }) {
                     <img src={url} alt={`New ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
                     <button
                       type="button"
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 rtl:right-auto rtl:left-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removeNewImage(index)}
                     >
                       <X className="h-4 w-4" />

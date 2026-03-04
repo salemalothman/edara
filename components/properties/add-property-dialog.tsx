@@ -28,6 +28,7 @@ interface PropertyFormData {
   units: string
   size: string
   description: string
+  currentPropertyValue: string
   amenities: {
     parking: boolean
     security: boolean
@@ -49,6 +50,7 @@ const initialFormData: PropertyFormData = {
   units: "",
   size: "",
   description: "",
+  currentPropertyValue: "",
   amenities: {
     parking: false,
     security: false,
@@ -101,6 +103,7 @@ export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}
           units: parseInt(data.units),
           size: data.size ? parseFloat(data.size) : null,
           description: data.description || null,
+          current_property_value: data.currentPropertyValue ? parseFloat(data.currentPropertyValue) : null,
           amenities: data.amenities,
           image_urls: imageUrls,
         })
@@ -276,6 +279,18 @@ export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="currentPropertyValue">{t("properties.currentPropertyValue")}</Label>
+              <Input
+                id="currentPropertyValue"
+                type="number"
+                placeholder="0.000"
+                min="0"
+                step="0.001"
+                value={formData.currentPropertyValue}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="description">{t("properties.description")}</Label>
               <Textarea
                 id="description"
@@ -391,7 +406,7 @@ export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}
                       />
                       <button
                         type="button"
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 rtl:right-auto rtl:left-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => removeImage(index)}
                       >
                         <X className="h-4 w-4" />

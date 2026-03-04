@@ -407,7 +407,7 @@ export function AddMaintenanceRequestDialog({ onSuccess }: { onSuccess?: () => v
                         />
                         <button
                           type="button"
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 rtl:right-auto rtl:left-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => removeImage(index)}
                         >
                           <AlertCircle className="h-4 w-4" />

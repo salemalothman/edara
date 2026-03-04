@@ -11,50 +11,117 @@ import { PropertyPerformanceTable } from "@/components/financial-metrics/propert
 import { Button } from "@/components/ui/button"
 import { Download, FileText } from "lucide-react"
 import { useState } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
+import { downloadExport, type ExportFormat } from "@/utils/export"
+import { useSupabaseQuery } from "@/hooks/use-supabase-query"
+import { fetchInvoices } from "@/lib/services/invoices"
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
+import { fetchProperties } from "@/lib/services/properties"
 
-export function FinancialOverview() {
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+export function FinancialOverview({ period = "6m" }: { period?: string }) {
   const { t } = useLanguage()
-  const { formatCurrency } = useFormatter()
-  const { toast } = useToast()
-  const [isExporting, setIsExporting] = useState(false)
+  const { formatCurrency, formatPercentage } = useFormatter()
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [reportDialogOpen, setReportDialogOpen] = useState(false)
 
-  const handleExport = async () => {
-    setIsExporting(true)
-    try {
-      // Simulate export process
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      toast({
-        title: t("financial.exportSuccess"),
-        description: t("financial.exportSuccessDesc"),
-      })
-    } catch (error) {
-      toast({
-        title: t("financial.exportError"),
-        description: t("financial.exportErrorDesc"),
-        variant: "destructive",
-      })
-    } finally {
-      setIsExporting(false)
+  const { data: invoices } = useSupabaseQuery(fetchInvoices)
+  const { data: expensesData } = useSupabaseQuery(fetchExpenses)
+  const { data: maintCosts } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
+  const { data: properties } = useSupabaseQuery(fetchProperties)
+
+  const buildMonthlyData = () => {
+    const now = new Date()
+    const monthCount = period === "1m" ? 1 : period === "3m" ? 3 : 6
+    const rows = []
+    for (let i = monthCount - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+      const revenue = invoices
+        .filter((inv: any) => inv.status === "paid" && inv.issue_date?.substring(0, 7) === key)
+        .reduce((s: number, inv: any) => s + (Number(inv.amount) || 0), 0)
+      const manualExp = expensesData
+        .filter((e: any) => (e.date || e.created_at)?.substring(0, 7) === key)
+        .reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0)
+      const maintExp = maintCosts
+        .filter((m: any) => m.created_at?.substring(0, 7) === key)
+        .reduce((s: number, m: any) => s + (Number(m.cost) || 0), 0)
+      const expenses = manualExp + maintExp
+      const noi = revenue - expenses
+      const roi = revenue > 0 ? noi / revenue : 0
+      rows.push({ label, revenue, expenses, noi, roi })
     }
+    return rows
   }
 
-  const handleGenerateReport = () => {
-    toast({
-      title: t("financial.reportGenerating"),
-      description: t("financial.reportGeneratingDesc"),
-    })
+  const handleExportFormat = (format: ExportFormat) => {
+    const monthlyData = buildMonthlyData()
+    const headers = [t("dashboard.month"), t("financial.revenue"), t("financial.expenses"), t("financial.noi"), t("financial.roi")]
+    const rows = monthlyData.map(m => [m.label, formatCurrency(m.revenue), formatCurrency(m.expenses), formatCurrency(m.noi), formatPercentage(m.roi)])
+    const totalRevenue = monthlyData.reduce((s, m) => s + m.revenue, 0)
+    const totalExpenses = monthlyData.reduce((s, m) => s + m.expenses, 0)
+    const totalNOI = totalRevenue - totalExpenses
+    const avgROI = monthlyData.length > 0 ? monthlyData.reduce((s, m) => s + m.roi, 0) / monthlyData.length : 0
+    rows.push(["", "", "", "", ""])
+    rows.push([t("common.total"), formatCurrency(totalRevenue), formatCurrency(totalExpenses), formatCurrency(totalNOI), formatPercentage(avgROI)])
 
-    // Simulate report generation
-    setTimeout(() => {
-      toast({
-        title: t("financial.reportReady"),
-        description: t("financial.reportReadyDesc"),
-      })
-    }, 2000)
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("financial.title"),
+      filename: "financial-overview",
+    })
+  }
+
+  const handleReportFormat = (format: ExportFormat) => {
+    const monthlyData = buildMonthlyData()
+    const headers = [t("dashboard.month"), t("financial.revenue"), t("financial.expenses"), t("financial.noi"), t("financial.roi")]
+    const rows = monthlyData.map(m => [m.label, formatCurrency(m.revenue), formatCurrency(m.expenses), formatCurrency(m.noi), formatPercentage(m.roi)])
+    const totalRevenue = monthlyData.reduce((s, m) => s + m.revenue, 0)
+    const totalExpenses = monthlyData.reduce((s, m) => s + m.expenses, 0)
+    const totalNOI = totalRevenue - totalExpenses
+    const avgROI = monthlyData.length > 0 ? monthlyData.reduce((s, m) => s + m.roi, 0) / monthlyData.length : 0
+    rows.push([t("common.total"), formatCurrency(totalRevenue), formatCurrency(totalExpenses), formatCurrency(totalNOI), formatPercentage(avgROI)])
+
+    const totalPropertyValue = properties.reduce((s: number, p: any) => s + (Number(p.current_property_value) || 0), 0)
+    const totalDebtService = properties.reduce((s: number, p: any) => s + (Number(p.annual_debt_service) || 0), 0)
+    const totalCashInvested = properties.reduce((s: number, p: any) => s + (Number(p.total_cash_invested) || 0), 0)
+    const noi = totalRevenue - totalExpenses
+    const capRate = totalPropertyValue > 0 ? noi / totalPropertyValue : 0
+    const expenseRatio = totalRevenue > 0 ? totalExpenses / totalRevenue : 0
+    const dscr = totalDebtService > 0 ? noi / totalDebtService : 0
+    const cashOnCash = totalCashInvested > 0 ? (noi - totalDebtService) / totalCashInvested : 0
+    const grm = totalRevenue > 0 ? totalPropertyValue / totalRevenue : 0
+    const breakEven = totalRevenue > 0 ? (totalExpenses + totalDebtService) / totalRevenue : 0
+
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("financial.title") + " - " + t("financial.generateReport"),
+      filename: "financial-report",
+      sections: [
+        {
+          title: t("financial.ratios"),
+          headers: [t("financial.ratio"), t("common.value")],
+          rows: [
+            [t("financial.capRate"), formatPercentage(capRate)],
+            [t("financial.operatingExpenseRatio"), formatPercentage(expenseRatio)],
+            [t("financial.debtServiceCoverageRatio"), dscr.toFixed(2)],
+            [t("financial.cashOnCashReturn"), formatPercentage(cashOnCash)],
+            [t("financial.grossRentMultiplier"), grm.toFixed(1)],
+            [t("financial.breakEvenRatio"), formatPercentage(breakEven)],
+          ],
+        },
+      ],
+    })
   }
 
   return (
+    <>
+    <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
+    <ExportFormatDialog open={reportDialogOpen} onOpenChange={setReportDialogOpen} onSelect={handleReportFormat} />
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
@@ -62,13 +129,13 @@ export function FinancialOverview() {
           <CardDescription>{t("financial.description")}</CardDescription>
         </div>
         <div className="flex space-x-2 rtl:space-x-reverse">
-          <Button variant="outline" size="sm" onClick={handleGenerateReport}>
+          <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)}>
             <FileText className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
             {t("financial.generateReport")}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+          <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
             <Download className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
-            {isExporting ? t("financial.exporting") : t("financial.export")}
+            {t("financial.export")}
           </Button>
         </div>
       </CardHeader>
@@ -82,11 +149,11 @@ export function FinancialOverview() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <FinancialMetricsChart />
+            <FinancialMetricsChart period={period} />
           </TabsContent>
 
           <TabsContent value="ratios" className="space-y-4">
-            <FinancialRatios />
+            <FinancialRatios period={period} />
           </TabsContent>
 
           <TabsContent value="maintenance" className="space-y-4">
@@ -99,5 +166,6 @@ export function FinancialOverview() {
         </Tabs>
       </CardContent>
     </Card>
+    </>
   )
 }

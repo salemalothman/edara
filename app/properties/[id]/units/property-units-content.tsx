@@ -21,6 +21,7 @@ import { BackToDashboard } from "@/components/back-to-dashboard"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchPropertyById } from "@/lib/services/properties"
 import { fetchUnitsByProperty, updateUnit, deleteUnit } from "@/lib/services/units"
+import { fetchTenantsByProperty } from "@/lib/services/tenants"
 import { AddUnitDialog } from "@/components/units/add-unit-dialog"
 
 export function PropertyUnitsContent({ propertyId }: { propertyId: string }) {
@@ -29,8 +30,15 @@ export function PropertyUnitsContent({ propertyId }: { propertyId: string }) {
   const { toast } = useToast()
   const { data: property, loading: loadingProperty } = useSupabaseQuery(() => fetchPropertyById(propertyId), [propertyId])
   const { data: units, loading: loadingUnits, refetch } = useSupabaseQuery(() => fetchUnitsByProperty(propertyId), [propertyId])
+  const { data: tenants } = useSupabaseQuery(() => fetchTenantsByProperty(propertyId), [propertyId])
 
   const loading = loadingProperty || loadingUnits
+
+  const occupiedUnitIds = new Set(
+    tenants
+      .filter((t: any) => t.unit_id && t.status !== "former")
+      .map((t: any) => t.unit_id)
+  )
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
@@ -81,7 +89,7 @@ export function PropertyUnitsContent({ propertyId }: { propertyId: string }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {loading ? <Skeleton className="h-7 w-12" /> : units.filter((u: any) => u.status === "occupied").length}
+              {loading ? <Skeleton className="h-7 w-12" /> : units.filter((u: any) => occupiedUnitIds.has(u.id)).length}
             </div>
           </CardContent>
         </Card>
@@ -91,7 +99,7 @@ export function PropertyUnitsContent({ propertyId }: { propertyId: string }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {loading ? <Skeleton className="h-7 w-12" /> : units.filter((u: any) => u.status === "vacant" || !u.status).length}
+              {loading ? <Skeleton className="h-7 w-12" /> : units.filter((u: any) => !occupiedUnitIds.has(u.id)).length}
             </div>
           </CardContent>
         </Card>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Download, Search, MoreHorizontal, FileText, ExternalLink } from "lucide-react"
+import { Download, Search, MoreHorizontal, FileText, ExternalLink, UserPlus, ChevronDown } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useFormatter } from "@/hooks/use-formatter"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,8 @@ import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 import { BackToDashboard } from "@/components/back-to-dashboard"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { useToast } from "@/hooks/use-toast"
+import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
+import { downloadExport, type ExportFormat } from "@/utils/export"
 import { fetchTenants, updateTenant, deleteTenant } from "@/lib/services/tenants"
 
 export function TenantsPageClient() {
@@ -33,6 +35,10 @@ export function TenantsPageClient() {
   const { data: tenants, loading, refetch } = useSupabaseQuery(fetchTenants)
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [addTenantOpen, setAddTenantOpen] = useState(false)
+  const [addContractOpen, setAddContractOpen] = useState(false)
+  const [contractForTenantId, setContractForTenantId] = useState<string | null>(null)
 
   // Get the most recent (active) contract for a tenant
   const getActiveContract = (tenant: any) => {
@@ -83,8 +89,8 @@ export function TenantsPageClient() {
     }
   }
 
-  const handleExport = () => {
-    const headers = ["Name", "Property", "Unit", "Email", "Phone", "Status", "Move-in Date", "Lease End", "Contract ID", "Rent"]
+  const handleExportFormat = (format: ExportFormat) => {
+    const headers = [t("tenants.name"), t("common.properties"), t("tenants.unit"), t("tenants.email"), t("tenants.phone"), t("common.status"), t("tenants.moveInDate"), t("tenants.leaseEnd"), t("tenants.contractId"), t("tenants.rent")]
     const rows = filteredTenants.map((tenant: any) => {
       const contract = getActiveContract(tenant)
       return [
@@ -100,14 +106,13 @@ export function TenantsPageClient() {
         contract?.rent_amount || "",
       ]
     })
-    const csv = [headers, ...rows].map((r) => r.map((c: string) => `"${c}"`).join(",")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "tenants.csv"
-    a.click()
-    URL.revokeObjectURL(url)
+
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("common.tenants"),
+      filename: "tenants",
+    })
   }
 
   const statusBadge = (status: string) => {
@@ -142,13 +147,40 @@ export function TenantsPageClient() {
   }
 
   return (
+    <>
+    <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
+    <AddTenantDialog onSuccess={refetch} open={addTenantOpen} onOpenChange={setAddTenantOpen} />
+    <AddContractDialog
+      onSuccess={refetch}
+      open={addContractOpen}
+      onOpenChange={(isOpen) => {
+        setAddContractOpen(isOpen)
+        if (!isOpen) setContractForTenantId(null)
+      }}
+      defaultTenantId={contractForTenantId || undefined}
+    />
     <div className="flex-1 space-y-4 p-8 pt-6">
       <BackToDashboard />
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">{t("tenants.title")} & {t("common.contracts")}</h2>
-        <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <AddContractDialog onSuccess={refetch} />
-          <AddTenantDialog onSuccess={refetch} />
+        <div className="flex items-center">
+          <Button onClick={() => setAddTenantOpen(true)} className="rounded-e-none">
+            <UserPlus className="me-2 h-4 w-4" />
+            {t("tenants.addTenant")}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="rounded-s-none border-s border-primary-foreground/20 px-2">
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setAddContractOpen(true)}>
+                <FileText className="me-2 h-4 w-4" />
+                {t("contracts.addContract")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -160,7 +192,7 @@ export function TenantsPageClient() {
             <TabsTrigger value="former">{t("tenants.former")}</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
               <Download className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
               {t("common.export")}
             </Button>
@@ -278,9 +310,16 @@ export function TenantsPageClient() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => {
+                                  setContractForTenantId(tenant.id)
+                                  setAddContractOpen(true)
+                                }}>
+                                  <FileText className="me-2 h-4 w-4" />
+                                  {t("contracts.addContract")}
+                                </DropdownMenuItem>
                                 {contract?.file_url && (
                                   <DropdownMenuItem onClick={() => window.open(contract.file_url, "_blank")}>
-                                    <FileText className="mr-2 h-4 w-4" />
+                                    <FileText className="me-2 h-4 w-4" />
                                     View Contract PDF
                                   </DropdownMenuItem>
                                 )}
@@ -324,5 +363,6 @@ export function TenantsPageClient() {
         </div>
       </Tabs>
     </div>
+    </>
   )
 }

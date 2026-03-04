@@ -191,7 +191,7 @@ export function PropertyTable({ properties = [], onSearch, onFilter, onExport }:
               <Filter className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
               {t("common.filter")}
             </Button>
-            <div className="ml-auto">
+            <div className="ms-auto">
               <ExportButton onExport={onExport} />
             </div>
           </form>

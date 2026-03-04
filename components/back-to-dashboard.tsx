@@ -43,7 +43,7 @@ export function BackToDashboard({ route = "/", variant = "outline", size = "sm",
 
   return (
     <Button variant={variant} size={size} className={className} onClick={handleClick}>
-      <ChevronLeft className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
+      <ChevronLeft className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4 rtl:-scale-x-100" />
       {t("common.backToDashboard")}
     </Button>
   )

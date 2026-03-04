@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { FileText, Upload, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { Button } from "@/components/ui/button"
@@ -49,8 +49,25 @@ interface ContractFormData {
   file: File | null
 }
 
-export function AddContractDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
-  const [open, setOpen] = useState(false)
+interface AddContractDialogProps {
+  onSuccess?: () => void
+  defaultTenantId?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  trigger?: React.ReactNode
+}
+
+export function AddContractDialog({ onSuccess, defaultTenantId, open: controlledOpen, onOpenChange, trigger }: AddContractDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (value: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(value)
+    } else {
+      setInternalOpen(value)
+    }
+  }
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("upload")
   const [isExtracting, setIsExtracting] = useState(false)
@@ -81,6 +98,21 @@ export function AddContractDialog({ onSuccess }: { onSuccess?: () => void } = {}
 
   const { data: propertiesData } = useSupabaseQuery(fetchProperties)
   const properties = propertiesData.map((p: any) => ({ id: p.id, name: p.name }))
+
+  // Pre-fill tenant data when defaultTenantId is provided and dialog opens
+  useEffect(() => {
+    if (open && defaultTenantId && tenantsData.length > 0) {
+      const tenant = tenantsData.find((t: any) => t.id === defaultTenantId)
+      if (tenant) {
+        setFormData((prev) => ({
+          ...prev,
+          tenantId: tenant.id,
+          propertyId: tenant.property_id || "",
+          unitId: tenant.unit_id || "",
+        }))
+      }
+    }
+  }, [open, defaultTenantId, tenantsData])
 
   const { data: filteredUnits } = useSupabaseQuery(
     () => formData.propertyId ? fetchUnitsByProperty(formData.propertyId) : Promise.resolve([]),
@@ -232,12 +264,34 @@ export function AddContractDialog({ onSuccess }: { onSuccess?: () => void } = {}
         const contractId = `CONT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
         setFormData((prev) => ({ ...prev, contractId }))
       }
+      if (!isOpen) {
+        // Reset form when closing
+        setFormData({
+          contractId: "",
+          tenantId: "",
+          propertyId: "",
+          unitId: "",
+          startDate: undefined,
+          endDate: undefined,
+          rentAmount: "",
+          depositAmount: "",
+          paymentFrequency: "",
+          terms: "",
+          file: null,
+        })
+        setExtractionComplete(false)
+        setActiveTab("upload")
+      }
     }}>
-      <DialogTrigger asChild>
-        <Button>
-          <FileText className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> {t("contracts.addContract")}
-        </Button>
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
+          <Button>
+            <FileText className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> {t("contracts.addContract")}
+          </Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>{t("contracts.addContract")}</DialogTitle>
@@ -398,11 +452,11 @@ export function AddContractDialog({ onSuccess }: { onSuccess?: () => void } = {}
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-start font-normal",
                           !formData.startDate && "text-muted-foreground",
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
                         {formData.startDate ? (
                           format(formData.startDate, "PPP")
                         ) : (
@@ -427,11 +481,11 @@ export function AddContractDialog({ onSuccess }: { onSuccess?: () => void } = {}
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-start font-normal",
                           !formData.endDate && "text-muted-foreground",
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
                         {formData.endDate ? format(formData.endDate, "PPP") : <span>{t("contracts.selectDate")}</span>}
                       </Button>
                     </PopoverTrigger>

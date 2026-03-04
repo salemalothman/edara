@@ -10,7 +10,6 @@ import { TenantActivity } from "@/components/tenant-activity"
 import { ModuleCards } from "@/components/module-cards"
 import { useLanguage } from "@/contexts/language-context"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { FinancialOverview } from "@/components/financial-metrics/financial-overview"
 import { DashboardHeader } from "@/components/dashboard-header"
@@ -19,19 +18,31 @@ import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchUnits } from "@/lib/services/units"
 import { fetchInvoices } from "@/lib/services/invoices"
 import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
+import { fetchProperties } from "@/lib/services/properties"
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
+import { fetchTenants } from "@/lib/services/tenants"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NotificationsTab } from "@/components/notifications/notifications-tab"
+import { useFormatter } from "@/hooks/use-formatter"
+import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
+import { downloadExport, type ExportFormat } from "@/utils/export"
 
 function AnalyticsTab() {
   const { t } = useLanguage()
   const { data: units, loading: loadingUnits } = useSupabaseQuery(fetchUnits)
+  const { data: tenants, loading: loadingTenants } = useSupabaseQuery(fetchTenants)
   const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
   const { data: maintenance, loading: loadingMaint } = useSupabaseQuery(fetchMaintenanceRequests)
 
-  const loading = loadingUnits || loadingInv || loadingMaint
+  const loading = loadingUnits || loadingTenants || loadingInv || loadingMaint
 
+  const occupiedUnitIds = new Set(
+    tenants
+      .filter((t: any) => t.unit_id && t.status !== "former")
+      .map((t: any) => t.unit_id)
+  )
   const totalUnits = units.length
-  const occupiedUnits = units.filter((u: any) => u.status === "occupied").length
+  const occupiedUnits = units.filter((u: any) => occupiedUnitIds.has(u.id)).length
   const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0
 
   const totalInvoices = invoices.length
@@ -100,17 +111,71 @@ function AnalyticsTab() {
 export default function DashboardPage() {
   const { t } = useLanguage()
   const router = useRouter()
-  const { toast } = useToast()
+  const { formatCurrency } = useFormatter()
   const [activeTab, setActiveTab] = useState("overview")
+  const [selectedPeriod, setSelectedPeriod] = useState("6m")
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+
+  const { data: properties } = useSupabaseQuery(fetchProperties)
+  const { data: units } = useSupabaseQuery(fetchUnits)
+  const { data: dashTenants } = useSupabaseQuery(fetchTenants)
+  const { data: invoices } = useSupabaseQuery(fetchInvoices)
+  const { data: expensesData } = useSupabaseQuery(fetchExpenses)
+  const { data: maintCosts } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
 
   const handleAddProperty = () => {
     router.push("/properties")
   }
 
-  const handleExport = async () => {
-    // Simulate export process
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    return Promise.resolve()
+  const handleExportClick = async () => {
+    setExportDialogOpen(true)
+  }
+
+  const handleExportFormat = (format: ExportFormat) => {
+    const now = new Date()
+    const monthCount = selectedPeriod === "1m" ? 1 : selectedPeriod === "3m" ? 3 : 6
+    const periodStart = new Date(now.getFullYear(), now.getMonth() - monthCount + 1, 1)
+    const periodStartKey = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`
+    const isInPeriod = (dateStr: string | undefined) => {
+      if (!dateStr) return false
+      return dateStr.substring(0, 7) >= periodStartKey
+    }
+
+    const headers = [
+      t("properties.name"),
+      t("dashboard.totalUnits"),
+      t("dashboard.occupied"),
+      t("dashboard.vacantUnits"),
+      t("financial.totalRevenue"),
+      t("financial.totalExpenses"),
+    ]
+    const activeTenantUnitIds = new Set(
+      dashTenants
+        .filter((t: any) => t.unit_id && t.status !== "former")
+        .map((t: any) => t.unit_id)
+    )
+    const rows = properties.map((prop: any) => {
+      const propUnits = units.filter((u: any) => u.property_id === prop.id)
+      const occupied = propUnits.filter((u: any) => activeTenantUnitIds.has(u.id)).length
+      const vacant = propUnits.length - occupied
+      const revenue = invoices
+        .filter((inv: any) => inv.status === "paid" && inv.property_id === prop.id && isInPeriod(inv.issue_date))
+        .reduce((s: number, inv: any) => s + (Number(inv.amount) || 0), 0)
+      const manualExp = expensesData
+        .filter((e: any) => e.property_id === prop.id && isInPeriod(e.date || e.created_at))
+        .reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0)
+      const maintExp = maintCosts
+        .filter((m: any) => m.property_id === prop.id && isInPeriod(m.created_at))
+        .reduce((s: number, m: any) => s + (Number(m.cost) || 0), 0)
+      return [prop.name, propUnits.length, occupied, vacant, formatCurrency(revenue), formatCurrency(manualExp + maintExp)]
+    })
+
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("dashboard.title"),
+      filename: "dashboard-summary",
+    })
   }
 
   const handleViewAllRequests = () => {
@@ -123,12 +188,15 @@ export default function DashboardPage() {
 
   return (
     <>
+      <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
       <div className="flex min-h-screen flex-col">
         <DashboardHeader
           showDatePicker={true}
           showExport={true}
           showAddButton={false}
-          onExport={handleExport}
+          onExport={handleExportClick}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
         />
 
         <div className="flex-1 space-y-4 p-8 pt-6">
@@ -144,7 +212,7 @@ export default function DashboardPage() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
-              <PropertyStats />
+              <PropertyStats period={selectedPeriod} />
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4">
                   <CardHeader>
@@ -152,7 +220,7 @@ export default function DashboardPage() {
                     <CardDescription>{t("dashboard.monthlyRentCollection")}</CardDescription>
                   </CardHeader>
                   <CardContent className="pl-2 rtl:pr-2 rtl:pl-0">
-                    <Overview />
+                    <Overview period={selectedPeriod} />
                   </CardContent>
                 </Card>
                 <Card className="col-span-3">
@@ -167,7 +235,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Financial Metrics Overview */}
-              <FinancialOverview />
+              <FinancialOverview period={selectedPeriod} />
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-3">

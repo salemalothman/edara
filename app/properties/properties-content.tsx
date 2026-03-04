@@ -26,6 +26,8 @@ import { useFormatter } from "@/hooks/use-formatter"
 import { BackToDashboard } from "@/components/back-to-dashboard"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
+import { downloadExport, type ExportFormat } from "@/utils/export"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchProperties, deleteProperty } from "@/lib/services/properties"
 
@@ -40,6 +42,7 @@ export default function PropertiesContent() {
     types: { residential: true, commercial: true, mixed: true },
   })
   const { data: properties, loading, refetch } = useSupabaseQuery(fetchProperties)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
 
   // Filter properties by tab, dropdown filters, and search query
   const filteredProperties = properties.filter((property: any) => {
@@ -102,7 +105,7 @@ export default function PropertiesContent() {
     }
   }
 
-  const handleExport = () => {
+  const handleExportFormat = (format: ExportFormat) => {
     if (filteredProperties.length === 0) {
       toast({
         title: t("common.export"),
@@ -112,7 +115,7 @@ export default function PropertiesContent() {
       return
     }
 
-    const headers = ["Name", "Address", "City", "State", "Zip", "Type", "Units"]
+    const headers = [t("properties.propertyName"), t("properties.address"), t("properties.city"), t("properties.state"), t("properties.zip"), t("properties.type"), t("properties.units")]
     const rows = filteredProperties.map((p: any) => [
       p.name,
       p.address,
@@ -123,22 +126,11 @@ export default function PropertiesContent() {
       p.units,
     ])
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row: any[]) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")),
-    ].join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = "properties.csv"
-    link.click()
-    URL.revokeObjectURL(url)
-
-    toast({
-      title: t("common.export"),
-      description: `Exported ${filteredProperties.length} properties.`,
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("common.properties"),
+      filename: "properties",
     })
   }
 
@@ -158,6 +150,7 @@ export default function PropertiesContent() {
               <TableHead>{t("properties.units")}</TableHead>
               <TableHead>{t("properties.occupancy")}</TableHead>
               <TableHead>{t("properties.monthlyRevenue")}</TableHead>
+              <TableHead>{t("properties.currentPropertyValue")}</TableHead>
               <TableHead className="text-right rtl:text-left">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -165,14 +158,14 @@ export default function PropertiesContent() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : filteredProperties.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {t("properties.noProperties")}
                 </TableCell>
               </TableRow>
@@ -195,7 +188,8 @@ export default function PropertiesContent() {
                       <span className="ml-2 rtl:mr-2 rtl:ml-0 text-xs">{formatPercentage(0)}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{formatCurrency(0)}</TableCell>
+                  <TableCell>{formatCurrency(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell>{formatCurrency(property.current_property_value || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
                   <TableCell className="text-right rtl:text-left">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -238,6 +232,8 @@ export default function PropertiesContent() {
   )
 
   return (
+    <>
+    <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
     <div className="flex-1 space-y-4 p-8 pt-6">
       <BackToDashboard />
       <div className="flex items-center justify-between space-y-2">
@@ -255,7 +251,7 @@ export default function PropertiesContent() {
           </TabsList>
           <div className="flex gap-2">
             <PropertyFilters filters={filters} onFiltersChange={setFilters} />
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
               <Download className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
               {t("common.export")}
             </Button>
@@ -279,5 +275,6 @@ export default function PropertiesContent() {
         </div>
       </Tabs>
     </div>
+    </>
   )
 }

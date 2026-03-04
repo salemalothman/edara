@@ -22,6 +22,8 @@ import { BackToDashboard } from "@/components/back-to-dashboard"
 import { useLanguage } from "@/hooks/use-language"
 import { useFormatter } from "@/hooks/use-formatter"
 import { useToast } from "@/hooks/use-toast"
+import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
+import { downloadExport, type ExportFormat } from "@/utils/export"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchExpenses, fetchApprovedMaintenanceCosts, deleteExpense } from "@/lib/services/expenses"
 
@@ -33,6 +35,7 @@ export function ExpensesPageClient() {
   const { data: maintenanceCosts, loading: maintLoading, refetch: refetchMaint } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
 
   const loading = expLoading || maintLoading
 
@@ -93,7 +96,7 @@ export function ExpensesPageClient() {
     }
   }
 
-  const handleExport = () => {
+  const handleExportFormat = (format: ExportFormat) => {
     const headers = [t("expenses.description"), t("expenses.amount"), t("expenses.category"), t("expenses.property"), t("expenses.date"), t("expenses.source")]
     const rows = filteredExpenses.map((e) => [
       e.description,
@@ -103,14 +106,13 @@ export function ExpensesPageClient() {
       e.date || "",
       t(`expenses.${e.source}`),
     ])
-    const csv = [headers, ...rows].map(row => row.map((c) => `"${c}"`).join(",")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "expenses.csv"
-    a.click()
-    URL.revokeObjectURL(url)
+
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("expenses.title"),
+      filename: "expenses",
+    })
   }
 
   const categoryLabel = (cat: string) => {
@@ -126,6 +128,8 @@ export function ExpensesPageClient() {
   }
 
   return (
+    <>
+    <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
     <div className="flex-1 space-y-4 p-8 pt-6">
       <BackToDashboard />
       <div className="flex items-center justify-between space-y-2">
@@ -177,7 +181,7 @@ export function ExpensesPageClient() {
             <TabsTrigger value="maintenance">{t("expenses.maintenance")}</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
               <Download className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
               {t("common.export")}
             </Button>
@@ -258,7 +262,7 @@ export function ExpensesPageClient() {
                                     className="text-red-600"
                                     onClick={() => handleDelete(expense.id)}
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <Trash2 className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
                                     {t("common.delete")}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -278,5 +282,6 @@ export function ExpensesPageClient() {
         ))}
       </Tabs>
     </div>
+    </>
   )
 }

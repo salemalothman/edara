@@ -14,6 +14,7 @@ import { fetchInvoices } from "@/lib/services/invoices"
 import { fetchMaintenanceRequests } from "@/lib/services/maintenance"
 import { fetchUnits } from "@/lib/services/units"
 import { fetchProperties } from "@/lib/services/properties"
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
 
 const benchmarks = {
   capRate: { min: 0.05, target: 0.07, max: 0.09 },
@@ -24,7 +25,7 @@ const benchmarks = {
   breakEvenRatio: { min: 0.75, target: 0.8, max: 0.85 },
 }
 
-export function FinancialRatios() {
+export function FinancialRatios({ period = "6m" }: { period?: string }) {
   const { t } = useLanguage()
   const { formatPercentage } = useFormatter()
   const [activeIndex, setActiveIndex] = useState(0)
@@ -33,34 +34,65 @@ export function FinancialRatios() {
   const { data: maintenance, loading: l2 } = useSupabaseQuery(fetchMaintenanceRequests)
   const { data: units, loading: l3 } = useSupabaseQuery(fetchUnits)
   const { data: properties, loading: l4 } = useSupabaseQuery(fetchProperties)
+  const { data: manualExpenses, loading: l5 } = useSupabaseQuery(fetchExpenses)
+  const { data: maintenanceCosts, loading: l6 } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
 
-  const loading = l1 || l2 || l3 || l4
+  const loading = l1 || l2 || l3 || l4 || l5 || l6
 
-  // Compute real ratios from data
-  const totalRevenue = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
-  const totalBilled = invoices.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
-  const totalPending = invoices.filter((i: any) => i.status !== "paid").reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+  // Calculate period start date for filtering
+  const now = new Date()
+  const monthCount = period === "1m" ? 1 : period === "3m" ? 3 : 6
+  const periodStart = new Date(now.getFullYear(), now.getMonth() - monthCount + 1, 1)
+  const periodStartKey = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`
+  const isInPeriod = (dateStr: string | undefined) => {
+    if (!dateStr) return false
+    return dateStr.substring(0, 7) >= periodStartKey
+  }
+
+  // Revenue from paid invoices within the selected period
+  const totalRevenue = invoices.filter((i: any) => i.status === "paid" && isInPeriod(i.issue_date)).reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
+  const totalBilled = invoices.filter((i: any) => isInPeriod(i.issue_date)).reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
 
   const totalUnits = units.length
-  const occupiedUnits = units.filter((u: any) => u.status === "occupied").length
-  const occupancyRate = totalUnits > 0 ? occupiedUnits / totalUnits : 0
 
-  // Approximate ratios from available data
-  const collectionRate = invoices.length > 0 ? invoices.filter((i: any) => i.status === "paid").length / invoices.length : 0
-  const expenseRatio = totalBilled > 0 ? totalPending / totalBilled : 0
-  const capRate = totalRevenue > 0 ? (totalRevenue / 12) / (totalRevenue * 10) : 0.07 // approximate
-  const dscr = totalPending > 0 ? totalRevenue / totalPending : 1.5
-  const cashOnCash = collectionRate * 0.08 // approximate
-  const grm = totalRevenue > 0 ? (totalBilled * 12) / totalRevenue : 10
-  const breakEvenRatio = totalBilled > 0 ? (totalPending) / totalBilled : 0.8
+  // Total operating expenses = manual expenses + completed maintenance costs (within period)
+  const totalManualExpenses = manualExpenses.filter((e: any) => isInPeriod(e.date || e.created_at)).reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0)
+  const totalMaintenanceExpenses = maintenanceCosts.filter((m: any) => isInPeriod(m.created_at)).reduce((s: number, m: any) => s + (Number(m.cost) || 0), 0)
+  const totalOperatingExpenses = totalManualExpenses + totalMaintenanceExpenses
+
+  // Property financial data
+  const totalPropertyValue = properties.reduce((s: number, p: any) => s + (Number(p.current_property_value) || 0), 0)
+  const totalDebtService = properties.reduce((s: number, p: any) => s + (Number(p.annual_debt_service) || 0), 0)
+  const totalCashInvested = properties.reduce((s: number, p: any) => s + (Number(p.total_cash_invested) || 0), 0)
+
+  // NOI = Total Revenue - Total Operating Expenses
+  const noi = totalRevenue - totalOperatingExpenses
+
+  // Collection rate (within period)
+  const periodInvoices = invoices.filter((i: any) => isInPeriod(i.issue_date))
+  const collectionRate = periodInvoices.length > 0 ? periodInvoices.filter((i: any) => i.status === "paid").length / periodInvoices.length : 0
+
+  // Real formulas
+  // Cap Rate = NOI / Total Property Value
+  const capRate = totalPropertyValue > 0 ? noi / totalPropertyValue : 0
+  // Operating Expense Ratio = Operating Expenses / Gross Revenue
+  const expenseRatio = totalRevenue > 0 ? totalOperatingExpenses / totalRevenue : 0
+  // DSCR = NOI / Annual Debt Service
+  const dscr = totalDebtService > 0 ? noi / totalDebtService : 0
+  // Cash on Cash Return = (NOI - Debt Service) / Total Cash Invested
+  const cashOnCash = totalCashInvested > 0 ? (noi - totalDebtService) / totalCashInvested : 0
+  // GRM = Property Value / Annual Gross Rent
+  const grm = totalRevenue > 0 ? totalPropertyValue / totalRevenue : 0
+  // Break Even Ratio = (Operating Expenses + Debt Service) / Gross Revenue
+  const breakEvenRatio = totalRevenue > 0 ? (totalOperatingExpenses + totalDebtService) / totalRevenue : 0
 
   const ratios = {
-    capRate: Math.min(capRate, 0.15),
-    operatingExpenseRatio: Math.min(expenseRatio, 1),
-    debtServiceCoverageRatio: Math.min(Math.max(dscr, 0.5), 3),
-    cashOnCashReturn: Math.min(cashOnCash, 0.15),
-    grossRentMultiplier: Math.min(Math.max(grm, 5), 20),
-    breakEvenRatio: Math.min(breakEvenRatio, 1),
+    capRate: Math.max(0, Math.min(capRate, 0.15)),
+    operatingExpenseRatio: Math.max(0, Math.min(expenseRatio, 1)),
+    debtServiceCoverageRatio: Math.max(0, Math.min(dscr, 3)),
+    cashOnCashReturn: Math.max(0, Math.min(cashOnCash, 0.15)),
+    grossRentMultiplier: Math.max(0, Math.min(grm, 20)),
+    breakEvenRatio: Math.max(0, Math.min(breakEvenRatio, 1)),
   }
 
   // Income breakdown pie chart
@@ -69,11 +101,11 @@ export function FinancialRatios() {
     { name: t("dashboard.pending"), value: Math.round((1 - collectionRate) * 100), color: "#8B5CF6" },
   ]
 
-  // Status breakdown pie chart
-  const paidCount = invoices.filter((i: any) => i.status === "paid").length
-  const pendingCount = invoices.filter((i: any) => i.status === "pending").length
-  const overdueCount = invoices.filter((i: any) => i.status === "overdue").length
-  const totalInv = invoices.length || 1
+  // Status breakdown pie chart (within period)
+  const paidCount = periodInvoices.filter((i: any) => i.status === "paid").length
+  const pendingCount = periodInvoices.filter((i: any) => i.status === "pending").length
+  const overdueCount = periodInvoices.filter((i: any) => i.status === "overdue").length
+  const totalInv = periodInvoices.length || 1
   const expenseBreakdownData = [
     { name: t("dashboard.paid"), value: Math.round((paidCount / totalInv) * 100), color: "#22C55E" },
     { name: t("dashboard.pending"), value: Math.round((pendingCount / totalInv) * 100), color: "#FBBF24" },

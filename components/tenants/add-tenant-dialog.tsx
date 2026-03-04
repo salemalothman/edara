@@ -37,8 +37,23 @@ const initialFormData = {
   deposit: "",
 }
 
-export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
-  const [open, setOpen] = useState(false)
+interface AddTenantDialogProps {
+  onSuccess?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function AddTenantDialog({ onSuccess, open: controlledOpen, onOpenChange }: AddTenantDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (value: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(value)
+    } else {
+      setInternalOpen(value)
+    }
+  }
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { t } = useLanguage()
   const { toast } = useToast()
@@ -104,11 +119,13 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <UserPlus className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> {t("tenants.addTenant")}
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button>
+            <UserPlus className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> {t("tenants.addTenant")}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -183,7 +200,14 @@ export function AddTenantDialog({ onSuccess }: { onSuccess?: () => void } = {}) 
                 <Label>{t("tenants.unit")}</Label>
                 <Select
                   value={formData.unit}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, unit: value }))}
+                  onValueChange={(value) => {
+                    const selectedUnit = units.find((u: any) => u.id === value)
+                    setFormData((prev) => ({
+                      ...prev,
+                      unit: value,
+                      rent: selectedUnit?.rent_amount ? String(selectedUnit.rent_amount) : prev.rent,
+                    }))
+                  }}
                   disabled={!formData.property}
                 >
                   <SelectTrigger>

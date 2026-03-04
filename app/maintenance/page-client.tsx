@@ -22,6 +22,8 @@ import { BackToDashboard } from "@/components/back-to-dashboard"
 import { useLanguage } from "@/hooks/use-language"
 import { useFormatter } from "@/hooks/use-formatter"
 import { useToast } from "@/hooks/use-toast"
+import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
+import { downloadExport, type ExportFormat } from "@/utils/export"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchMaintenanceRequests, updateMaintenanceRequest, deleteMaintenanceRequest } from "@/lib/services/maintenance"
 
@@ -32,6 +34,7 @@ export function MaintenancePageClient() {
   const { data: requests, loading, error, refetch } = useSupabaseQuery(fetchMaintenanceRequests)
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
 
   const priorityBadge = (priority: string) => {
     switch (priority) {
@@ -83,7 +86,7 @@ export function MaintenancePageClient() {
     }
   }
 
-  const handleExport = () => {
+  const handleExportFormat = (format: ExportFormat) => {
     const headers = [t("dashboard.propertyUnit"), t("dashboard.issue"), t("maintenance.category"), t("dashboard.reportedDate"), t("maintenance.priority"), t("common.status")]
     const rows = filteredRequests.map((r: any) => [
       `${r.property?.name || "—"}${r.unit?.name ? `, ${r.unit.name}` : ""}`,
@@ -93,14 +96,13 @@ export function MaintenancePageClient() {
       r.priority,
       r.status?.replace("_", " ") || "pending",
     ])
-    const csv = [headers, ...rows].map(row => row.map((c: string) => `"${c}"`).join(",")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "maintenance-requests.csv"
-    a.click()
-    URL.revokeObjectURL(url)
+
+    downloadExport(format, {
+      headers,
+      rows,
+      title: t("common.maintenance"),
+      filename: "maintenance-requests",
+    })
   }
 
   // Filter by tab
@@ -249,6 +251,8 @@ export function MaintenancePageClient() {
   )
 
   return (
+    <>
+    <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
     <div className="flex-1 space-y-4 p-8 pt-6">
       <BackToDashboard />
       <div className="flex items-center justify-between space-y-2">
@@ -267,7 +271,7 @@ export function MaintenancePageClient() {
             <TabsTrigger value="completed">{t("maintenance.completed")}</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
               <Download className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
               {t("common.export")}
             </Button>
@@ -280,5 +284,6 @@ export function MaintenancePageClient() {
         <TabsContent value="completed" className="space-y-4">{renderTable()}</TabsContent>
       </Tabs>
     </div>
+    </>
   )
 }

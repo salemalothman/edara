@@ -87,7 +87,13 @@ export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {})
   })
 
   const { data: tenantsData } = useSupabaseQuery(fetchTenants)
-  const tenants = tenantsData.map((t: any) => ({ id: t.id, name: `${t.first_name} ${t.last_name}` }))
+  const tenants = tenantsData.map((t: any) => ({
+    id: t.id,
+    name: `${t.first_name} ${t.last_name}`,
+    property_id: t.property_id,
+    unit_id: t.unit_id,
+    rent_amount: t.unit?.rent_amount ?? t.rent,
+  }))
 
   const { data: propertiesData } = useSupabaseQuery(fetchProperties)
   const properties = propertiesData.map((p: any) => ({ id: p.id, name: p.name }))
@@ -103,7 +109,16 @@ export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {})
   }
 
   const handleSelectChange = (id: string, value: string) => {
-    if (id === "propertyId") {
+    if (id === "tenantId") {
+      const tenant = tenants.find((t) => t.id === value)
+      setFormData((prev) => ({
+        ...prev,
+        tenantId: value,
+        propertyId: tenant?.property_id || prev.propertyId,
+        unitId: tenant?.unit_id || prev.unitId,
+        amount: tenant?.rent_amount ? String(tenant.rent_amount) : prev.amount,
+      }))
+    } else if (id === "propertyId") {
       setFormData((prev) => ({ ...prev, propertyId: value, unitId: "" }))
     } else {
       setFormData((prev) => ({ ...prev, [id]: value }))
@@ -502,11 +517,11 @@ export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {})
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-start font-normal",
                           !formData.issueDate && "text-muted-foreground",
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
                         {formData.issueDate ? (
                           format(formData.issueDate, "PPP")
                         ) : (
@@ -531,11 +546,11 @@ export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {})
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-start font-normal",
                           !formData.dueDate && "text-muted-foreground",
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
                         {formData.dueDate ? format(formData.dueDate, "PPP") : <span>{t("invoices.selectDate")}</span>}
                       </Button>
                     </PopoverTrigger>

@@ -117,7 +117,7 @@ export function FeatureHighlights() {
               <CardHeader className="flex flex-row items-center gap-4 pb-2">
                 <div className="rounded-full bg-primary/10 p-2 text-primary">{feature.icon}</div>
                 <div>
-                  <CardTitle className={language === "ar" ? "font-arabic text-right" : ""}>
+                  <CardTitle className={language === "ar" ? "font-arabic" : ""}>
                     {language === "ar" ? feature.titleAr : feature.titleEn}
                   </CardTitle>
                   <Badge variant="outline" className={`mt-1 ${badgeColors[feature.badge as keyof typeof badgeColors]}`}>
@@ -126,7 +126,7 @@ export function FeatureHighlights() {
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription className={`text-sm ${language === "ar" ? "font-arabic text-right" : ""}`}>
+                <CardDescription className={`text-sm ${language === "ar" ? "font-arabic" : ""}`}>
                   {language === "ar" ? feature.descriptionAr : feature.descriptionEn}
                 </CardDescription>
               </CardContent>

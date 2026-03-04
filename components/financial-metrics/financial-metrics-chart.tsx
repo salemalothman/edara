@@ -5,20 +5,17 @@ import { useFormatter } from "@/hooks/use-formatter"
 import { useTheme } from "next-themes"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from "recharts"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useState } from "react"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchInvoices } from "@/lib/services/invoices"
 import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/expenses"
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-export function FinancialMetricsChart() {
+export function FinancialMetricsChart({ period = "6m" }: { period?: string }) {
   const { t } = useLanguage()
   const { formatCurrency, formatPercentage } = useFormatter()
   const { theme } = useTheme()
-  const [timeRange, setTimeRange] = useState("12months")
 
   const { data: invoices, loading: loadingInv } = useSupabaseQuery(fetchInvoices)
   const { data: expensesData, loading: loadingExp } = useSupabaseQuery(fetchExpenses)
@@ -28,7 +25,7 @@ export function FinancialMetricsChart() {
 
   // Build monthly data from real invoices + expenses
   const now = new Date()
-  const monthCount = timeRange === "3months" ? 3 : timeRange === "6months" ? 6 : 12
+  const monthCount = period === "1m" ? 1 : period === "3m" ? 3 : 6
   const allData = []
   for (let i = monthCount - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
@@ -108,18 +105,6 @@ export function FinancialMetricsChart() {
               <CardTitle className="text-xl">{formatPercentage(averageROI)}</CardTitle>
             </CardHeader>
           </Card>
-        </div>
-        <div className="w-[180px]">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger>
-              <SelectValue placeholder={t("financial.selectTimeRange")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3months">{t("financial.last3Months")}</SelectItem>
-              <SelectItem value="6months">{t("financial.last6Months")}</SelectItem>
-              <SelectItem value="12months">{t("financial.last12Months")}</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 

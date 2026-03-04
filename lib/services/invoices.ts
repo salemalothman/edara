@@ -84,6 +84,68 @@ export async function deleteInvoice(id: string) {
   if (error) throw error
 }
 
+export async function generateMonthlyInvoices() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() // 0-based
+  const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+
+  // Fetch active tenants with property, unit, and rent info
+  const { data: tenants, error: tenantErr } = await supabase
+    .from('tenants')
+    .select('id, first_name, last_name, property_id, unit_id, rent, unit:units(rent_amount)')
+    .eq('status', 'active')
+    .not('property_id', 'is', null)
+    .not('unit_id', 'is', null)
+
+  if (tenantErr || !tenants || tenants.length === 0) return 0
+
+  // Check which tenants already have an invoice this month
+  const { data: existingInvoices } = await supabase
+    .from('invoices')
+    .select('tenant_id')
+    .gte('issue_date', `${monthStr}-01`)
+    .lte('issue_date', `${monthStr}-31`)
+
+  const alreadyInvoiced = new Set(
+    (existingInvoices || []).map((inv: any) => inv.tenant_id)
+  )
+
+  const invoicesToCreate: any[] = []
+  let seq = (existingInvoices?.length || 0) + 1
+
+  for (const tenant of tenants as any[]) {
+    if (alreadyInvoiced.has(tenant.id)) continue
+
+    // Get rent amount: prefer unit's rent_amount, fall back to tenant's rent
+    const unitRent = tenant.unit?.rent_amount
+    const rentAmount = unitRent ?? tenant.rent
+    if (!rentAmount || rentAmount <= 0) continue
+
+    invoicesToCreate.push({
+      invoice_number: `INV-${year}-${String(month + 1).padStart(2, '0')}-${String(seq).padStart(3, '0')}`,
+      tenant_id: tenant.id,
+      property_id: tenant.property_id,
+      unit_id: tenant.unit_id,
+      issue_date: `${monthStr}-01`,
+      due_date: `${monthStr}-15`,
+      amount: rentAmount,
+      status: 'pending',
+      description: `Monthly rent - ${tenant.first_name} ${tenant.last_name}`,
+    })
+    seq++
+  }
+
+  if (invoicesToCreate.length === 0) return 0
+
+  const { error: insertErr } = await supabase
+    .from('invoices')
+    .insert(invoicesToCreate)
+
+  if (insertErr) throw insertErr
+  return invoicesToCreate.length
+}
+
 export async function uploadInvoiceFile(file: File): Promise<string> {
   const path = `invoices/${Date.now()}-${file.name}`
   const { error } = await supabase.storage

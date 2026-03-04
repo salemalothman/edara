@@ -11,7 +11,7 @@ import { fetchExpenses, fetchApprovedMaintenanceCosts } from "@/lib/services/exp
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-export function Overview() {
+export function Overview({ period = "6m" }: { period?: string }) {
   const { formatCurrency } = useFormatter()
   const { t } = useLanguage()
   const { theme } = useTheme()
@@ -22,10 +22,11 @@ export function Overview() {
 
   const loading = loadingInv || loadingExp || loadingMaint
 
-  // Build monthly data from real invoices + expenses for last 6 months
+  // Build monthly data from real invoices + expenses
   const now = new Date()
+  const monthCount = period === "1m" ? 1 : period === "3m" ? 3 : 6
   const chartData = []
-  for (let i = 5; i >= 0; i--) {
+  for (let i = monthCount - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` // "YYYY-MM"
     const label = MONTHS[d.getMonth()]
