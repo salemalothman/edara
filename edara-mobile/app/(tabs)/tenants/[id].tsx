@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, ScrollView, Linking, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Phone, Mail, Calendar, Home, MessageCircle, FileText, ExternalLink } from 'lucide-react-native'
+import { Phone, Mail, Calendar, Home, MessageCircle, FileText, ExternalLink, Trash2, Upload } from 'lucide-react-native'
+import * as DocumentPicker from 'expo-document-picker'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
 import { fetchTenants, deleteTenant } from '../../../lib/services/tenants'
+import { deleteContract, uploadContractForTenant } from '../../../lib/services/contracts'
 import { openWhatsApp } from '../../../lib/services/whatsapp-reminders'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
@@ -16,18 +18,20 @@ export default function TenantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [tenant, setTenant] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency, formatDate } = useFormatter()
   const router = useRouter()
 
-  useEffect(() => {
-    fetchTenants().then((tenants) => {
-      const found = tenants.find((t: any) => t.id === id)
-      setTenant(found)
-      setLoading(false)
-    })
-  }, [id])
+  const loadTenant = async () => {
+    const tenants = await fetchTenants()
+    const found = tenants.find((t: any) => t.id === id)
+    setTenant(found)
+    setLoading(false)
+  }
+
+  useEffect(() => { loadTenant() }, [id])
 
   const handleDelete = () => {
     Alert.alert(t('common.delete'), t('tenants.deleteConfirm'), [
@@ -36,8 +40,55 @@ export default function TenantDetailScreen() {
     ])
   }
 
+  const handleDeleteContract = (contractId: string, fileUrl: string | null) => {
+    Alert.alert(t('contracts.deleteContract'), t('contracts.confirmDeleteContract'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'), style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteContract(contractId, fileUrl)
+            await loadTenant()
+          } catch (err: any) {
+            Alert.alert(t('common.error'), err.message)
+          }
+        },
+      },
+    ])
+  }
+
+  const handleUploadContract = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      })
+      if (result.canceled || !result.assets?.length) return
+      const asset = result.assets[0]
+
+      setUploading(true)
+      await uploadContractForTenant(
+        tenant.id,
+        tenant.property_id || '',
+        tenant.unit_id || '',
+        asset.uri,
+        asset.name
+      )
+      await loadTenant()
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   if (loading) return <LoadingSpinner />
   if (!tenant) return null
+
+  const sortedContracts = tenant.contracts?.length
+    ? [...tenant.contracts].sort((a: any, b: any) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime())
+    : []
+  const contract = sortedContracts[0] || null
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -128,36 +179,41 @@ export default function TenantDetailScreen() {
 
         {/* Contract Info */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common.contracts')}</Text>
-        {tenant.contracts && tenant.contracts.length > 0 ? (
-          (() => {
-            const sorted = [...tenant.contracts].sort((a: any, b: any) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime())
-            const contract = sorted[0]
-            return (
-              <Card>
-                {contract.file_url ? (
-                  <TouchableOpacity
-                    style={styles.viewContractBtn}
-                    onPress={() => Linking.openURL(contract.file_url)}
-                  >
-                    <View style={[styles.pdfIcon, { backgroundColor: colors.primaryLight || '#e0f2fe' }]}>
-                      <FileText size={24} color={colors.primary} />
-                    </View>
-                    <View style={styles.viewContractInfo}>
-                      <Text style={[styles.viewContractTitle, { color: colors.text }]}>{t('contracts.viewContract')}</Text>
-                      <Text style={[styles.viewContractSub, { color: colors.textSecondary }]}>{contract.contract_id}</Text>
-                    </View>
-                    <ExternalLink size={18} color={colors.primary} />
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.contractIdRow}>
-                    <FileText size={16} color={colors.primary} />
-                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('contracts.contractId')}</Text>
-                    <Text style={[styles.infoValue, { color: colors.text }]}>{contract.contract_id}</Text>
+        {contract ? (
+          <Card>
+            {contract.file_url ? (
+              <>
+                <TouchableOpacity
+                  style={styles.viewContractBtn}
+                  onPress={() => Linking.openURL(contract.file_url)}
+                >
+                  <View style={[styles.pdfIcon, { backgroundColor: colors.primaryLight || '#e0f2fe' }]}>
+                    <FileText size={24} color={colors.primary} />
                   </View>
-                )}
-              </Card>
-            )
-          })()
+                  <View style={styles.viewContractInfo}>
+                    <Text style={[styles.viewContractTitle, { color: colors.text }]}>{t('contracts.viewContract')}</Text>
+                    <Text style={[styles.viewContractSub, { color: colors.textSecondary }]}>{contract.contract_id}</Text>
+                  </View>
+                  <ExternalLink size={18} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.deleteContractBtn, { borderTopColor: colors.border || '#e2e8f0' }]}
+                  onPress={() => handleDeleteContract(contract.id, contract.file_url)}
+                >
+                  <Trash2 size={16} color={colors.danger || '#dc2626'} />
+                  <Text style={[styles.deleteContractText, { color: colors.danger || '#dc2626' }]}>
+                    {t('contracts.deleteContract')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.contractIdRow}>
+                <FileText size={16} color={colors.primary} />
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('contracts.contractId')}</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{contract.contract_id}</Text>
+              </View>
+            )}
+          </Card>
         ) : (
           <Card>
             <Text style={[styles.noContract, { color: colors.textSecondary }]}>{t('contracts.noContract')}</Text>
@@ -166,7 +222,9 @@ export default function TenantDetailScreen() {
         <Button
           title={t('contracts.addContract')}
           variant="outline"
-          onPress={() => router.push(`/(tabs)/tenants/add-contract?tenantId=${tenant.id}&propertyId=${tenant.property_id || ''}&unitId=${tenant.unit_id || ''}`)}
+          icon={<Upload size={16} color={colors.primary} />}
+          onPress={handleUploadContract}
+          loading={uploading}
           style={{ marginTop: 12 }}
         />
 
@@ -198,5 +256,7 @@ const styles = StyleSheet.create({
   viewContractTitle: { fontSize: 16, fontWeight: '600' },
   viewContractSub: { fontSize: 13, marginTop: 2 },
   contractIdRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
+  deleteContractBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 12, marginTop: 8, borderTopWidth: 0.5 },
+  deleteContractText: { fontSize: 14, fontWeight: '500' },
   actions: { marginTop: 32, marginBottom: 40 },
 })

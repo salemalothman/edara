@@ -181,7 +181,13 @@
     "enterUnitName": "يرجى إدخال اسم الوحدة",
     "requiredFieldsError": "يرجى ملء الحقول المطلوبة (الاسم، العنوان، المدينة)",
     "addUnitNameError": "يرجى إضافة وحدة واحدة على الأقل مع اسم",
-    "propertyDetails": "تفاصيل العقار"
+    "propertyDetails": "تفاصيل العقار",
+    "document": "الوثيقة",
+    "uploadDocument": "رفع وثيقة",
+    "viewDocument": "عرض الوثيقة",
+    "noDocument": "لا توجد وثيقة",
+    "deleteDocument": "حذف الوثيقة",
+    "confirmDeleteDocument": "هل أنت متأكد من حذف هذه الوثيقة؟ سيتم حذف ملف PDF نهائياً."
   },
   "tenants": {
     "title": "المستأجرين",
@@ -284,7 +290,12 @@
     "terms": "الشروط والأحكام",
     "termsPlaceholder": "أدخل شروط وأحكام العقد",
     "viewContract": "عرض العقد",
-    "noContract": "لا يوجد عقد"
+    "noContract": "لا يوجد عقد",
+    "deleteContract": "حذف العقد",
+    "confirmDeleteContract": "هل أنت متأكد من حذف هذا العقد؟ سيتم حذف ملف PDF نهائياً.",
+    "deleteSuccess": "تم حذف العقد",
+    "contractDeleted": "تم حذف العقد بنجاح.",
+    "deleteError": "فشل في حذف العقد. يرجى المحاولة مرة أخرى."
   },
   "invoices": {
     "title": "الفواتير",

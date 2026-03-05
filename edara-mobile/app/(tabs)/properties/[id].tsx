@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, Image, Alert, RefreshControl, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Image, Alert, RefreshControl, TouchableOpacity, Linking } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { MapPin, Maximize, Home, Plus } from 'lucide-react-native'
+import { MapPin, Maximize, Home, Plus, FileText, ExternalLink, Trash2, Upload } from 'lucide-react-native'
+import * as DocumentPicker from 'expo-document-picker'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
-import { fetchPropertyById, deleteProperty } from '../../../lib/services/properties'
+import { fetchPropertyById, deleteProperty, uploadPropertyDocument, deletePropertyDocument } from '../../../lib/services/properties'
 import { fetchUnitsByProperty, insertUnit, deleteUnit } from '../../../lib/services/units'
 import { fetchTenantsByProperty } from '../../../lib/services/tenants'
 import { Card } from '../../../components/ui/Card'
@@ -26,6 +27,7 @@ export default function PropertyDetailScreen() {
   const [newUnitSize, setNewUnitSize] = useState('')
   const [newUnitRent, setNewUnitRent] = useState('')
   const [addingUnit, setAddingUnit] = useState(false)
+  const [uploadingDoc, setUploadingDoc] = useState(false)
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency } = useFormatter()
@@ -110,6 +112,43 @@ export default function PropertyDetailScreen() {
     )
   }
 
+  const handleUploadDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      })
+      if (result.canceled || !result.assets?.length) return
+      const asset = result.assets[0]
+
+      setUploadingDoc(true)
+      await uploadPropertyDocument(id!, asset.uri, asset.name)
+      await loadData()
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message)
+    } finally {
+      setUploadingDoc(false)
+    }
+  }
+
+  const handleDeleteDocument = () => {
+    if (!property?.document_url) return
+    Alert.alert(t('properties.deleteDocument'), t('properties.confirmDeleteDocument'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'), style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePropertyDocument(id!, property.document_url)
+            await loadData()
+          } catch (err: any) {
+            Alert.alert(t('common.error'), err.message)
+          }
+        },
+      },
+    ])
+  }
+
   if (loading) return <LoadingSpinner />
   if (!property) return null
 
@@ -156,6 +195,47 @@ export default function PropertyDetailScreen() {
         {property.description && (
           <Text style={[styles.description, { color: colors.text }]}>{property.description}</Text>
         )}
+
+        {/* Document Section */}
+        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16, marginBottom: 10 }]}>{t('properties.document')}</Text>
+        {property.document_url ? (
+          <Card>
+            <TouchableOpacity
+              style={styles.viewDocBtn}
+              onPress={() => Linking.openURL(property.document_url)}
+            >
+              <View style={[styles.pdfIcon, { backgroundColor: colors.primaryLight || '#e0f2fe' }]}>
+                <FileText size={24} color={colors.primary} />
+              </View>
+              <View style={styles.viewDocInfo}>
+                <Text style={[styles.viewDocTitle, { color: colors.text }]}>{t('properties.viewDocument')}</Text>
+                <Text style={[styles.viewDocSub, { color: colors.textSecondary }]}>PDF</Text>
+              </View>
+              <ExternalLink size={18} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteDocBtn, { borderTopColor: colors.border || '#e2e8f0' }]}
+              onPress={handleDeleteDocument}
+            >
+              <Trash2 size={16} color={colors.danger || '#dc2626'} />
+              <Text style={[styles.deleteDocText, { color: colors.danger || '#dc2626' }]}>
+                {t('properties.deleteDocument')}
+              </Text>
+            </TouchableOpacity>
+          </Card>
+        ) : (
+          <Card>
+            <Text style={[styles.noDocument, { color: colors.textSecondary }]}>{t('properties.noDocument')}</Text>
+          </Card>
+        )}
+        <Button
+          title={t('properties.uploadDocument')}
+          variant="outline"
+          icon={<Upload size={16} color={colors.primary} />}
+          onPress={handleUploadDocument}
+          loading={uploadingDoc}
+          style={{ marginTop: 12 }}
+        />
 
         {/* Amenities */}
         {property.amenities && (
@@ -271,8 +351,8 @@ const styles = StyleSheet.create({
   addUnitRow: { flexDirection: 'row', gap: 8 },
   addUnitField: { flex: 1 },
   addUnitActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  amenities: { marginBottom: 8 },
-  amenityChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  amenities: { marginBottom: 8, marginTop: 16 },
+  amenityChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   unitsSummary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   unitStat: { flex: 1, alignItems: 'center' },
   unitStatValue: { fontSize: 28, fontWeight: '800' },
@@ -285,4 +365,13 @@ const styles = StyleSheet.create({
   unitRight: { alignItems: 'flex-end', gap: 4 },
   unitRent: { fontSize: 15, fontWeight: '600' },
   actions: { marginTop: 24, marginBottom: 40 },
+  // Document styles
+  viewDocBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  pdfIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  viewDocInfo: { flex: 1 },
+  viewDocTitle: { fontSize: 16, fontWeight: '600' },
+  viewDocSub: { fontSize: 13, marginTop: 2 },
+  noDocument: { fontSize: 14, textAlign: 'center', paddingVertical: 16 },
+  deleteDocBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 12, marginTop: 8, borderTopWidth: 0.5 },
+  deleteDocText: { fontSize: 14, fontWeight: '500' },
 })

@@ -83,3 +83,29 @@ export async function uploadContractForTenant(tenantId: string, propertyId: stri
   }
   return data
 }
+
+export async function deleteContract(contractId: string, fileUrl: string | null) {
+  if (fileUrl) {
+    try {
+      const url = new URL(fileUrl)
+      const pathMatch = url.pathname.match(/\/object\/public\/documents\/(.+)/)
+      if (pathMatch) {
+        const storagePath = decodeURIComponent(pathMatch[1])
+        const { error } = await supabase.storage
+          .from('documents')
+          .remove([storagePath])
+        if (error) console.error('Storage delete error:', error)
+      }
+    } catch (e) {
+      console.error('Failed to parse file URL for deletion:', e)
+    }
+  }
+
+  const { error } = await supabase
+    .from('contracts')
+    .delete()
+    .eq('id', contractId)
+  if (error) {
+    throw new Error(`Contract delete failed: ${error.message}`)
+  }
+}
