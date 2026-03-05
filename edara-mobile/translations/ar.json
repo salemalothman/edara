@@ -27,6 +27,15 @@
     "remove": "إزالة",
     "all": "الكل",
     "error": "خطأ",
+    "success": "نجاح",
+    "signOut": "تسجيل الخروج",
+    "signOutConfirm": "هل أنت متأكد من تسجيل الخروج؟",
+    "settings": "الإعدادات",
+    "theme": "المظهر",
+    "date": "التاريخ",
+    "share": "مشاركة",
+    "csv": "CSV",
+    "exportAs": "تصدير كـ",
     "notifications": "الإشعارات",
     "features": {
       "title": "ميزات النظام الرئيسية",
@@ -46,12 +55,16 @@
     "maintenance": "الصيانة",
     "reports": "التقارير",
     "properties": "العقارات",
-    "expenses": "المصروفات"
+    "expenses": "المصروفات",
+    "financing": "التمويل"
   },
   "dashboard": {
     "title": "لوحة التحكم",
     "overview": "نظرة عامة",
     "analytics": "التحليلات",
+    "period1m": "شهر",
+    "period3m": "3 أشهر",
+    "period6m": "6 أشهر",
     "reports": "التقارير",
     "notifications": "الإشعارات",
     "financialOverview": "نظرة عامة مالية",
@@ -211,7 +224,9 @@
     "sqm": "م²",
     "kwd": "د.ك",
     "tenantDetails": "تفاصيل المستأجر",
-    "contactInfo": "معلومات الاتصال"
+    "contactInfo": "معلومات الاتصال",
+    "deleteConfirm": "هل أنت متأكد من إزالة هذا المستأجر؟",
+    "leaseInfo": "معلومات الإيجار"
   },
   "contracts": {
     "title": "العقود",
@@ -254,6 +269,12 @@
     "selectDate": "اختر التاريخ",
     "rentAmount": "مبلغ الإيجار",
     "depositAmount": "مبلغ التأمين",
+    "contractFile": "ملف العقد (PDF)",
+    "uploadPdf": "رفع ملف PDF",
+    "uploadContractTitle": "رفع العقد",
+    "uploadContractDesc": "ارفع ملف العقد بصيغة PDF لهذا المستأجر. جميع بيانات المستأجر والعقار مسجلة مسبقاً.",
+    "uploadAndSave": "رفع وحفظ",
+    "selectPdfFirst": "يرجى اختيار ملف PDF أولاً.",
     "paymentFrequency": "تكرار الدفع",
     "selectFrequency": "اختر التكرار",
     "monthly": "شهري",
@@ -261,7 +282,9 @@
     "biannually": "نصف سنوي",
     "annually": "سنوي",
     "terms": "الشروط والأحكام",
-    "termsPlaceholder": "أدخل شروط وأحكام العقد"
+    "termsPlaceholder": "أدخل شروط وأحكام العقد",
+    "viewContract": "عرض العقد",
+    "noContract": "لا يوجد عقد"
   },
   "invoices": {
     "title": "الفواتير",
@@ -322,7 +345,11 @@
     "unitId": "رقم الوحدة",
     "createInvoice": "إنشاء فاتورة",
     "invoiceDetails": "تفاصيل الفاتورة",
-    "paidDate": "تاريخ الدفع"
+    "paidDate": "تاريخ الدفع",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه الفاتورة؟",
+    "markAsPaid": "تحديد كمدفوعة",
+    "markAsPending": "إرجاع لقيد الانتظار",
+    "noInvoices": "لا توجد فواتير"
   },
   "maintenance": {
     "title": "الصيانة",
@@ -394,7 +421,8 @@
     "high": "عالية",
     "addPhotos": "إضافة صور",
     "photosSelected": "صورة مختارة",
-    "cost": "التكلفة التقديرية (د.ك)"
+    "cost": "التكلفة التقديرية (د.ك)",
+    "noRequests": "لا توجد طلبات صيانة"
   },
   "expenses": {
     "title": "المصروفات",
@@ -550,6 +578,36 @@
       "formula": "الصيغة: (المصروفات التشغيلية + خدمة الدين) ÷ الدخل التشغيلي الإجمالي",
       "benchmark": "المعيار: كلما انخفض كان أفضل. <85% يعتبر جيد عموماً."
     }
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signInDesc": "أدخل بياناتك للوصول إلى لوحة التحكم",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "signUp": "إنشاء حساب",
+    "signUpDesc": "إنشاء حساب جديد",
+    "phoneNumber": "رقم الهاتف",
+    "sendOtp": "إرسال رمز التحقق",
+    "verifyOtp": "التحقق من الرمز",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟"
+  },
+  "financing": {
+    "title": "التمويل والديون",
+    "totalPropertyValue": "إجمالي قيمة العقارات",
+    "totalAnnualDebt": "إجمالي خدمة الدين السنوية",
+    "totalCashInvested": "إجمالي النقد المستثمر",
+    "propertyFinancing": "تمويل العقارات",
+    "propertyFinancingDesc": "إدارة قيم العقارات وخدمة الدين والنقد المستثمر",
+    "currentPropertyValue": "القيمة الحالية للعقار",
+    "annualDebtService": "خدمة الدين السنوية",
+    "updateSuccess": "تم تحديث بيانات التمويل بنجاح"
+  },
+  "export": {
+    "chooseFormat": "صيغة التصدير",
+    "csv": "CSV",
+    "csvDesc": "صيغة جداول البيانات، مثالية لـ Excel",
+    "share": "مشاركة"
   },
   "status": {
     "active": "نشط",

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
@@ -13,6 +13,7 @@ import { fetchUnits } from '../../lib/services/units'
 import { fetchInvoices } from '../../lib/services/invoices'
 import { fetchMaintenanceRequests } from '../../lib/services/maintenance'
 import { fetchExpenses } from '../../lib/services/expenses'
+import { fetchTenants } from '../../lib/services/tenants'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -32,11 +33,14 @@ export default function DashboardScreen() {
   const { data: invoices, loading: invLoading, refetch: refetchInv } = useSupabaseQuery(fetchInvoices)
   const { data: maintenance, loading: maintLoading, refetch: refetchMaint } = useSupabaseQuery(fetchMaintenanceRequests)
   const { data: expensesData, loading: expLoading, refetch: refetchExp } = useSupabaseQuery(fetchExpenses)
+  const { data: tenants, loading: tenLoading, refetch: refetchTen } = useSupabaseQuery(fetchTenants)
 
-  const loading = propsLoading || unitsLoading || invLoading || maintLoading || expLoading
+  const [selectedPeriod, setSelectedPeriod] = useState<'1m' | '3m' | '6m'>('6m')
+
+  const loading = propsLoading || unitsLoading || invLoading || maintLoading || expLoading || tenLoading
 
   useFocusEffect(useCallback(() => {
-    refetchProps(); refetchUnits(); refetchInv(); refetchMaint(); refetchExp()
+    refetchProps(); refetchUnits(); refetchInv(); refetchMaint(); refetchExp(); refetchTen()
   }, []))
 
   const onRefresh = useCallback(() => {
@@ -45,10 +49,14 @@ export default function DashboardScreen() {
     refetchInv()
     refetchMaint()
     refetchExp()
+    refetchTen()
   }, [])
 
-  // Calculate KPIs
-  const occupiedUnits = units.filter((u: any) => u.status === 'occupied').length
+  // Calculate KPIs — derive occupancy from active tenants, not unit.status
+  const occupiedUnitIds = new Set(
+    tenants.filter((t: any) => t.unit_id && t.status !== 'former').map((t: any) => t.unit_id)
+  )
+  const occupiedUnits = units.filter((u: any) => occupiedUnitIds.has(u.id)).length
   const occupancyRate = units.length > 0 ? Math.round((occupiedUnits / units.length) * 100) : 0
 
   const paidInvoices = invoices.filter((i: any) => i.status === 'paid')
@@ -58,10 +66,17 @@ export default function DashboardScreen() {
 
   const pendingMaintenance = maintenance.filter((m: any) => m.status === 'pending' || m.status === 'in_progress').length
 
+  // Period start date based on selected period
+  const periodStart = useMemo(() => {
+    const d = new Date()
+    if (selectedPeriod === '1m') d.setMonth(d.getMonth() - 1)
+    else if (selectedPeriod === '3m') d.setMonth(d.getMonth() - 3)
+    else d.setMonth(d.getMonth() - 6)
+    return d
+  }, [selectedPeriod])
+
   // Calculate monthly revenue & expenses data
   const { monthlyRevenue, monthlyExpenses, totalRevenue, totalExpenses, revenueByStatus } = useMemo(() => {
-    const now = new Date()
-    const currentYear = now.getFullYear()
     const revenue = new Array(12).fill(0)
     const expenses = new Array(12).fill(0)
     let paid = 0
@@ -70,7 +85,7 @@ export default function DashboardScreen() {
 
     invoices.forEach((inv: any) => {
       const date = new Date(inv.due_date || inv.created_at)
-      if (date.getFullYear() === currentYear) {
+      if (date >= periodStart) {
         const month = date.getMonth()
         if (inv.status === 'paid') {
           revenue[month] += inv.amount || 0
@@ -86,7 +101,7 @@ export default function DashboardScreen() {
     // Maintenance costs as expenses (completed with cost)
     maintenance.forEach((m: any) => {
       const date = new Date(m.created_at)
-      if (date.getFullYear() === currentYear && m.status === 'completed' && m.cost) {
+      if (date >= periodStart && m.status === 'completed' && m.cost) {
         expenses[date.getMonth()] += m.cost
       }
     })
@@ -94,7 +109,7 @@ export default function DashboardScreen() {
     // Manual expenses
     expensesData.forEach((e: any) => {
       const date = new Date(e.date || e.created_at)
-      if (date.getFullYear() === currentYear) {
+      if (date >= periodStart) {
         expenses[date.getMonth()] += e.amount || 0
       }
     })
@@ -106,7 +121,7 @@ export default function DashboardScreen() {
       totalExpenses: expenses.reduce((a, b) => a + b, 0),
       revenueByStatus: { paid, pending, overdue },
     }
-  }, [invoices, maintenance, expensesData])
+  }, [invoices, maintenance, expensesData, periodStart])
 
   const recentInvoices = invoices.slice(0, 5)
 
@@ -119,9 +134,9 @@ export default function DashboardScreen() {
   const maxExpense = Math.max(...monthlyExpenses, 1)
   const chartMax = Math.max(maxRevenue, maxExpense, 1)
   const currentMonth = new Date().getMonth()
-  // Show last 6 months
-  const chartMonths = Array.from({ length: 6 }, (_, i) => {
-    const m = currentMonth - 5 + i
+  const chartMonthCount = selectedPeriod === '1m' ? 1 : selectedPeriod === '3m' ? 3 : 6
+  const chartMonths = Array.from({ length: chartMonthCount }, (_, i) => {
+    const m = currentMonth - (chartMonthCount - 1) + i
     return m < 0 ? m + 12 : m
   })
 
@@ -147,6 +162,21 @@ export default function DashboardScreen() {
               <Settings size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Period Filter */}
+        <View style={styles.periodRow}>
+          {(['1m', '3m', '6m'] as const).map((period) => (
+            <TouchableOpacity
+              key={period}
+              style={[styles.periodBtn, { backgroundColor: selectedPeriod === period ? colors.primary : colors.card, borderColor: colors.border }]}
+              onPress={() => setSelectedPeriod(period)}
+            >
+              <Text style={{ color: selectedPeriod === period ? '#fff' : colors.text, fontSize: 13, fontWeight: '600' }}>
+                {t(`dashboard.period${period}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Financial Overview */}
@@ -310,6 +340,7 @@ export default function DashboardScreen() {
             { label: t('navigation.invoices'), icon: FileText, route: '/(tabs)/invoices' as const },
             { label: t('navigation.expenses'), icon: Receipt, route: '/(tabs)/expenses' as const },
             { label: t('navigation.maintenance'), icon: Wrench, route: '/(tabs)/maintenance' as const },
+            { label: t('navigation.financing'), icon: DollarSign, route: '/(tabs)/financing' as const },
           ].map((item) => (
             <TouchableOpacity
               key={item.route}
@@ -363,6 +394,8 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8 },
   greeting: { fontSize: 28, fontWeight: '800' },
   date: { fontSize: 14, marginTop: 4 },
+  periodRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  periodBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
 
   // Financial overview cards

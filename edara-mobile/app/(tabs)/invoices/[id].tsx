@@ -28,11 +28,11 @@ export default function InvoiceDetailScreen() {
     })
   }, [id])
 
-  const handleMarkPaid = async () => {
+  const handleStatusChange = async (newStatus: string) => {
     setUpdating(true)
     try {
-      await updateInvoice(id!, { status: 'paid' })
-      setInvoice({ ...invoice, status: 'paid' })
+      await updateInvoice(id!, { status: newStatus })
+      setInvoice({ ...invoice, status: newStatus })
     } catch (err: any) {
       Alert.alert(t('common.error'), err.message)
     } finally {
@@ -95,7 +95,10 @@ export default function InvoiceDetailScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           {invoice.status !== 'paid' && (
-            <Button title={t('invoices.markAsPaid')} onPress={handleMarkPaid} loading={updating} />
+            <Button title={t('invoices.markAsPaid')} onPress={() => handleStatusChange('paid')} loading={updating} />
+          )}
+          {invoice.status === 'paid' && (
+            <Button title={t('invoices.markAsPending')} variant="outline" onPress={() => handleStatusChange('pending')} loading={updating} />
           )}
           <Button title={t('common.delete')} variant="danger" onPress={handleDelete} style={styles.deleteBtn} />
         </View>

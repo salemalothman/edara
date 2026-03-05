@@ -1,66 +1,81 @@
 import { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Plus, AlertTriangle, Clock, CheckCircle } from 'lucide-react-native'
+import { Plus } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
-import { fetchMaintenanceRequests } from '../../../lib/services/maintenance'
+import { fetchContracts } from '../../../lib/services/contracts'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { SearchBar } from '../../../components/ui/SearchBar'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { EmptyState } from '../../../components/ui/EmptyState'
 
-export default function MaintenanceListScreen() {
+export default function ContractsListScreen() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const { t } = useLanguage()
   const { colors } = useTheme()
-  const { formatDate } = useFormatter()
+  const { formatCurrency, formatDate } = useFormatter()
   const router = useRouter()
 
-  const { data: requests, loading, refetch } = useSupabaseQuery(fetchMaintenanceRequests)
+  const { data: contracts, loading, refetch } = useSupabaseQuery(fetchContracts)
 
   useFocusEffect(useCallback(() => { refetch() }, []))
 
-  const filtered = requests.filter((req: any) => {
-    const matchesSearch = req.title.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || req.status === statusFilter
+  const getContractStatus = (contract: any) => {
+    const endDate = new Date(contract.end_date)
+    const now = new Date()
+    const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    if (endDate < now) return 'expired'
+    if (endDate < thirtyDays) return 'expiring'
+    return 'active'
+  }
+
+  const filtered = contracts.filter((c: any) => {
+    const matchesSearch = (c.contract_id || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.tenant ? `${c.tenant.first_name} ${c.tenant.last_name}` : '').toLowerCase().includes(search.toLowerCase())
+    const status = getContractStatus(c)
+    const matchesStatus = statusFilter === 'all' || status === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  const statusFilters = ['all', 'pending', 'assigned', 'in_progress', 'completed']
+  const statusFilters = ['all', 'active', 'expiring', 'expired']
 
-  const priorityVariant = (p: string) => p === 'high' ? 'danger' : p === 'medium' ? 'warning' : 'default'
-  const statusVariant = (s: string) => s === 'completed' ? 'success' : s === 'pending' ? 'warning' : 'default'
+  const statusVariant = (s: string) => s === 'active' ? 'success' : s === 'expiring' ? 'warning' : 'danger'
 
-  const renderItem = useCallback(({ item }: { item: any }) => (
-    <TouchableOpacity onPress={() => router.push(`/(tabs)/maintenance/${item.id}`)}>
-      <Card style={styles.requestCard}>
-        <View style={styles.requestHeader}>
-          <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
-          <Badge label={item.priority} variant={priorityVariant(item.priority)} />
+  const renderItem = useCallback(({ item }: { item: any }) => {
+    const status = getContractStatus(item)
+    return (
+      <Card style={styles.contractCard}>
+        <View style={styles.contractHeader}>
+          <Text style={[styles.contractId, { color: colors.text }]}>{item.contract_id}</Text>
+          <Badge label={t(`contracts.${status}`)} variant={statusVariant(status)} />
         </View>
-        <Text style={[styles.property, { color: colors.textSecondary }]}>
+        <Text style={[styles.tenantName, { color: colors.textSecondary }]}>
+          {item.tenant ? `${item.tenant.first_name} ${item.tenant.last_name}` : '—'}
+        </Text>
+        <Text style={[styles.propertyName, { color: colors.textSecondary }]}>
           {item.property?.name || '—'}{item.unit?.name ? ` · ${item.unit.name}` : ''}
         </Text>
-        <View style={styles.requestFooter}>
-          <Badge label={item.category} />
-          <Badge label={t(`status.${item.status}`)} variant={statusVariant(item.status)} />
-          <Text style={[styles.date, { color: colors.textSecondary }]}>{formatDate(item.created_at)}</Text>
+        <View style={styles.contractFooter}>
+          <Text style={[styles.rent, { color: colors.primary }]}>{formatCurrency(item.rent_amount)}/mo</Text>
+          <Text style={[styles.dates, { color: colors.textSecondary }]}>
+            {formatDate(item.start_date)} — {formatDate(item.end_date)}
+          </Text>
         </View>
       </Card>
-    </TouchableOpacity>
-  ), [colors])
+    )
+  }, [colors])
 
-  if (loading && requests.length === 0) return <LoadingSpinner />
+  if (loading && contracts.length === 0) return <LoadingSpinner />
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.filterArea}>
-        <SearchBar value={search} onChangeText={setSearch} placeholder={t('common.search')} />
+        <SearchBar value={search} onChangeText={setSearch} placeholder={t('contracts.searchContracts')} />
         <FlatList
           horizontal
           data={statusFilters}
@@ -72,7 +87,7 @@ export default function MaintenanceListScreen() {
               onPress={() => setStatusFilter(item)}
             >
               <Text style={{ color: statusFilter === item ? '#fff' : colors.text, fontSize: 13, fontWeight: '500' }}>
-                {item === 'all' ? t('common.all') : t(`status.${item}`)}
+                {item === 'all' ? t('contracts.allContracts') : t(`contracts.${item}`)}
               </Text>
             </TouchableOpacity>
           )}
@@ -86,12 +101,12 @@ export default function MaintenanceListScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />}
-        ListEmptyComponent={<EmptyState title={t('maintenance.noRequests')} />}
+        ListEmptyComponent={<EmptyState title={t('contracts.allContracts')} />}
       />
 
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(tabs)/maintenance/add')}
+        onPress={() => router.push('/(tabs)/contracts/add')}
       >
         <Plus size={24} color="#fff" />
       </TouchableOpacity>
@@ -105,11 +120,13 @@ const styles = StyleSheet.create({
   filterRow: { marginBottom: 4 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginEnd: 8 },
   list: { padding: 16, paddingTop: 8 },
-  requestCard: { marginBottom: 10 },
-  requestHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 16, fontWeight: '600', flex: 1, marginEnd: 8 },
-  property: { fontSize: 13, marginTop: 4 },
-  requestFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  date: { fontSize: 12, marginStart: 'auto' },
+  contractCard: { marginBottom: 10 },
+  contractHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  contractId: { fontSize: 16, fontWeight: '600', flex: 1, marginEnd: 8 },
+  tenantName: { fontSize: 14, marginTop: 4 },
+  propertyName: { fontSize: 13, marginTop: 2 },
+  contractFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  rent: { fontSize: 15, fontWeight: '700' },
+  dates: { fontSize: 12 },
   fab: { position: 'absolute', bottom: 24, end: 24, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
 })

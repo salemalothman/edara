@@ -7,6 +7,7 @@ import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
 import { fetchPropertyById, deleteProperty } from '../../../lib/services/properties'
 import { fetchUnitsByProperty, insertUnit, deleteUnit } from '../../../lib/services/units'
+import { fetchTenantsByProperty } from '../../../lib/services/tenants'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
@@ -17,6 +18,7 @@ export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [property, setProperty] = useState<any>(null)
   const [units, setUnits] = useState<any[]>([])
+  const [propertyTenants, setPropertyTenants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddUnit, setShowAddUnit] = useState(false)
   const [newUnitName, setNewUnitName] = useState('')
@@ -32,12 +34,14 @@ export default function PropertyDetailScreen() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [prop, unitsList] = await Promise.all([
+      const [prop, unitsList, tenantsList] = await Promise.all([
         fetchPropertyById(id!),
         fetchUnitsByProperty(id!),
+        fetchTenantsByProperty(id!),
       ])
       setProperty(prop)
       setUnits(unitsList)
+      setPropertyTenants(tenantsList)
     } catch (err) {
       console.error(err)
     } finally {
@@ -109,7 +113,10 @@ export default function PropertyDetailScreen() {
   if (loading) return <LoadingSpinner />
   if (!property) return null
 
-  const occupiedUnits = units.filter(u => u.status === 'occupied').length
+  const occupiedUnitIds = new Set(
+    propertyTenants.filter((t: any) => t.unit_id && t.status !== 'former').map((t: any) => t.unit_id)
+  )
+  const occupiedUnits = units.filter((u: any) => occupiedUnitIds.has(u.id)).length
 
   return (
     <ScrollView
@@ -230,9 +237,8 @@ export default function PropertyDetailScreen() {
                   <Text style={[styles.unitRent, { color: colors.text }]}>{formatCurrency(unit.rent_amount)}</Text>
                 )}
                 <Badge
-                  label={t(`status.${unit.status}`)}
-
-                  variant={unit.status === 'occupied' ? 'success' : unit.status === 'vacant' ? 'warning' : 'danger'}
+                  label={occupiedUnitIds.has(unit.id) ? t('status.occupied') : t('status.vacant')}
+                  variant={occupiedUnitIds.has(unit.id) ? 'success' : 'warning'}
                 />
               </View>
             </TouchableOpacity>

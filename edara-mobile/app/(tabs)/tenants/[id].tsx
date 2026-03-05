@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, Linking, Alert } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Linking, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Phone, Mail, Calendar, Home, MessageCircle } from 'lucide-react-native'
+import { Phone, Mail, Calendar, Home, MessageCircle, FileText, ExternalLink } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
@@ -126,6 +126,50 @@ export default function TenantDetailScreen() {
           )}
         </Card>
 
+        {/* Contract Info */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common.contracts')}</Text>
+        {tenant.contracts && tenant.contracts.length > 0 ? (
+          (() => {
+            const sorted = [...tenant.contracts].sort((a: any, b: any) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime())
+            const contract = sorted[0]
+            return (
+              <Card>
+                {contract.file_url ? (
+                  <TouchableOpacity
+                    style={styles.viewContractBtn}
+                    onPress={() => Linking.openURL(contract.file_url)}
+                  >
+                    <View style={[styles.pdfIcon, { backgroundColor: colors.primaryLight || '#e0f2fe' }]}>
+                      <FileText size={24} color={colors.primary} />
+                    </View>
+                    <View style={styles.viewContractInfo}>
+                      <Text style={[styles.viewContractTitle, { color: colors.text }]}>{t('contracts.viewContract')}</Text>
+                      <Text style={[styles.viewContractSub, { color: colors.textSecondary }]}>{contract.contract_id}</Text>
+                    </View>
+                    <ExternalLink size={18} color={colors.primary} />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.contractIdRow}>
+                    <FileText size={16} color={colors.primary} />
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('contracts.contractId')}</Text>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>{contract.contract_id}</Text>
+                  </View>
+                )}
+              </Card>
+            )
+          })()
+        ) : (
+          <Card>
+            <Text style={[styles.noContract, { color: colors.textSecondary }]}>{t('contracts.noContract')}</Text>
+          </Card>
+        )}
+        <Button
+          title={t('contracts.addContract')}
+          variant="outline"
+          onPress={() => router.push(`/(tabs)/tenants/add-contract?tenantId=${tenant.id}&propertyId=${tenant.property_id || ''}&unitId=${tenant.unit_id || ''}`)}
+          style={{ marginTop: 12 }}
+        />
+
         <View style={styles.actions}>
           <Button title={t('common.delete')} variant="danger" onPress={handleDelete} />
         </View>
@@ -147,5 +191,12 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#e2e8f0' },
   infoLabel: { fontSize: 14, flex: 1 },
   infoValue: { fontSize: 15, fontWeight: '600' },
+  noContract: { fontSize: 14, textAlign: 'center', paddingVertical: 16 },
+  viewContractBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  pdfIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  viewContractInfo: { flex: 1 },
+  viewContractTitle: { fontSize: 16, fontWeight: '600' },
+  viewContractSub: { fontSize: 13, marginTop: 2 },
+  contractIdRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
   actions: { marginTop: 32, marginBottom: 40 },
 })

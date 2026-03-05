@@ -31,6 +31,9 @@ export async function updateProperty(id: string, updates: {
   description?: string | null
   amenities?: Record<string, boolean>
   image_urls?: string[]
+  current_property_value?: number | null
+  annual_debt_service?: number | null
+  total_cash_invested?: number | null
 }) {
   const { data, error } = await supabase
     .from('properties')

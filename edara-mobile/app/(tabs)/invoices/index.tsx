@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Plus } from 'lucide-react-native'
+import { Plus, Download } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
@@ -12,10 +12,12 @@ import { Badge } from '../../../components/ui/Badge'
 import { SearchBar } from '../../../components/ui/SearchBar'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { EmptyState } from '../../../components/ui/EmptyState'
+import { ExportSheet } from '../../../components/ui/ExportSheet'
 
 export default function InvoicesListScreen() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [exportVisible, setExportVisible] = useState(false)
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency, formatDate } = useFormatter()
@@ -70,21 +72,28 @@ export default function InvoicesListScreen() {
       {/* Summary Cards */}
       <View style={styles.summary}>
         <Card style={{ ...styles.summaryCard, borderLeftColor: colors.warning, borderLeftWidth: 3 }}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Pending</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('status.pending')}</Text>
           <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(totalDue)}</Text>
         </Card>
         <Card style={{ ...styles.summaryCard, borderLeftColor: colors.danger, borderLeftWidth: 3 }}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Overdue</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('status.overdue')}</Text>
           <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(totalOverdue)}</Text>
         </Card>
         <Card style={{ ...styles.summaryCard, borderLeftColor: colors.success, borderLeftWidth: 3 }}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Paid</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('status.paid')}</Text>
           <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(totalPaid)}</Text>
         </Card>
       </View>
 
       <View style={styles.filterArea}>
-        <SearchBar value={search} onChangeText={setSearch} placeholder={t('common.search')} />
+        <View style={styles.searchRow}>
+          <View style={{ flex: 1 }}>
+            <SearchBar value={search} onChangeText={setSearch} placeholder={t('common.search')} />
+          </View>
+          <TouchableOpacity style={[styles.exportBtn, { borderColor: colors.border }]} onPress={() => setExportVisible(true)}>
+            <Download size={18} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
         <FlatList
           horizontal
           data={statusFilters}
@@ -119,6 +128,23 @@ export default function InvoicesListScreen() {
       >
         <Plus size={24} color="#fff" />
       </TouchableOpacity>
+
+      <ExportSheet
+        visible={exportVisible}
+        onClose={() => setExportVisible(false)}
+        data={{
+          headers: [t('invoices.invoiceNumber'), t('tenants.name'), t('invoices.amount'), t('invoices.dueDate'), t('common.status')],
+          rows: filtered.map((inv: any) => [
+            inv.invoice_number,
+            inv.tenant ? `${inv.tenant.first_name} ${inv.tenant.last_name}` : '',
+            inv.amount,
+            inv.due_date || '',
+            inv.status,
+          ]),
+          title: t('navigation.invoices'),
+          filename: 'invoices',
+        }}
+      />
     </View>
   )
 }
@@ -130,6 +156,8 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11, fontWeight: '500' },
   summaryValue: { fontSize: 14, fontWeight: '700', marginTop: 4 },
   filterArea: { paddingHorizontal: 16, paddingTop: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  exportBtn: { padding: 10, borderWidth: 1, borderRadius: 10 },
   filterRow: { marginBottom: 4 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginEnd: 8 },
   list: { padding: 16, paddingTop: 8 },
@@ -141,5 +169,5 @@ const styles = StyleSheet.create({
   dueDate: { fontSize: 12, marginTop: 2 },
   invoiceRight: { alignItems: 'flex-end', gap: 4 },
   amount: { fontSize: 16, fontWeight: '700' },
-  fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  fab: { position: 'absolute', bottom: 24, end: 24, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
 })

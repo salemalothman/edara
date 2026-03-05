@@ -2,7 +2,7 @@ import { Stack } from 'expo-router'
 import { useTheme } from '../../../contexts/theme-context'
 import { useLanguage } from '../../../contexts/language-context'
 
-export default function TenantsLayout() {
+export default function ContractsLayout() {
   const { colors } = useTheme()
   const { t } = useLanguage()
 
@@ -14,10 +14,8 @@ export default function TenantsLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('navigation.tenants') }} />
-      <Stack.Screen name="[id]" options={{ title: t('tenants.tenantDetails') }} />
-      <Stack.Screen name="add" options={{ title: t('tenants.addTenant'), presentation: 'modal' }} />
-      <Stack.Screen name="add-contract" options={{ title: t('contracts.addContract'), presentation: 'modal' }} />
+      <Stack.Screen name="index" options={{ title: t('common.contracts') }} />
+      <Stack.Screen name="add" options={{ title: t('contracts.addContract'), presentation: 'modal' }} />
     </Stack>
   )
 }

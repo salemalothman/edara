@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { Home, Building2, Users, FileText, Receipt, Wrench } from 'lucide-react-native'
+import { Home, Building2, Users, FileText, Receipt, Wrench, DollarSign } from 'lucide-react-native'
 import { useLanguage } from '../../contexts/language-context'
 import { useTheme } from '../../contexts/theme-context'
 
@@ -66,6 +66,19 @@ export default function TabLayout() {
           title: t('navigation.maintenance'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="financing"
+        options={{
+          title: t('navigation.financing'),
+          tabBarIcon: ({ color, size }) => <DollarSign size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="contracts"
+        options={{
+          href: null, // Hidden — contracts are accessed via Tenants tab
         }}
       />
       <Tabs.Screen
