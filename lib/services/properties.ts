@@ -34,6 +34,7 @@ export async function updateProperty(id: string, updates: {
   current_property_value?: number | null
   annual_debt_service?: number | null
   total_cash_invested?: number | null
+  document_url?: string | null
 }) {
   const { data, error } = await supabase
     .from('properties')
@@ -71,6 +72,66 @@ export async function insertProperty(property: {
 export async function deleteProperty(id: string) {
   const { error } = await supabase.from('properties').delete().eq('id', id)
   if (error) throw error
+}
+
+export async function uploadPropertyDocument(propertyId: string, file: File): Promise<string> {
+  const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `property-documents/${Date.now()}-${fileName}`
+
+  const arrayBuffer = await file.arrayBuffer()
+  const { error: uploadError } = await supabase.storage
+    .from('documents')
+    .upload(path, arrayBuffer, {
+      contentType: file.type || 'application/pdf',
+      upsert: false,
+    })
+  if (uploadError) {
+    console.error('Storage upload error:', JSON.stringify(uploadError))
+    throw new Error(`File upload failed: ${uploadError.message || JSON.stringify(uploadError)}`)
+  }
+
+  const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
+  const documentUrl = urlData.publicUrl
+
+  const { error: updateError } = await supabase
+    .from('properties')
+    .update({ document_url: documentUrl })
+    .eq('id', propertyId)
+  if (updateError) {
+    const detail = updateError.message || updateError.details || updateError.hint || JSON.stringify(updateError)
+    console.error('Property update error:', JSON.stringify(updateError))
+    throw new Error(`Failed to save document reference: ${detail}`)
+  }
+
+  return documentUrl
+}
+
+export async function deletePropertyDocument(propertyId: string, documentUrl: string) {
+  // Delete file from storage
+  try {
+    const url = new URL(documentUrl)
+    const pathMatch = url.pathname.match(/\/object\/public\/documents\/(.+)/)
+    if (pathMatch) {
+      const storagePath = decodeURIComponent(pathMatch[1])
+      const { error } = await supabase.storage
+        .from('documents')
+        .remove([storagePath])
+      if (error) console.error('Storage delete error:', error)
+    }
+  } catch (e) {
+    console.error('Failed to parse document URL for deletion:', e)
+  }
+
+  // Clear the reference from the property record
+  const { error } = await supabase
+    .from('properties')
+    .update({ document_url: null })
+    .eq('id', propertyId)
+  if (error) {
+    const detail = error.message || error.details || error.hint || JSON.stringify(error)
+    console.error('Property update error:', JSON.stringify(error))
+    throw new Error(`Failed to remove document reference: ${detail}`)
+  }
 }
 
 export async function uploadPropertyImages(files: File[]): Promise<string[]> {

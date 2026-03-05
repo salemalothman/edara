@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { Download, MoreHorizontal, Search } from "lucide-react"
+import { useState, useRef } from "react"
+import { Download, MoreHorizontal, Search, FileText, Upload, Trash2, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -19,6 +19,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { PropertyFilters, type PropertyFilterState } from "@/components/properties/property-filters"
 import { AddPropertyDialog } from "@/components/properties/add-property-dialog"
 import { useLanguage } from "@/hooks/use-language"
@@ -29,7 +31,7 @@ import { useRouter } from "next/navigation"
 import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
 import { downloadExport, type ExportFormat } from "@/utils/export"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
-import { fetchProperties, deleteProperty } from "@/lib/services/properties"
+import { fetchProperties, deleteProperty, uploadPropertyDocument, deletePropertyDocument } from "@/lib/services/properties"
 
 export default function PropertiesContent() {
   const { t } = useLanguage()
@@ -43,6 +45,12 @@ export default function PropertiesContent() {
   })
   const { data: properties, loading, refetch } = useSupabaseQuery(fetchProperties)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploadForPropertyId, setUploadForPropertyId] = useState<string | null>(null)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Filter properties by tab, dropdown filters, and search query
   const filteredProperties = properties.filter((property: any) => {
@@ -105,6 +113,47 @@ export default function PropertiesContent() {
     }
   }
 
+  const handleUploadDocument = async () => {
+    if (!uploadFile || !uploadForPropertyId) return
+    setIsUploading(true)
+    try {
+      await uploadPropertyDocument(uploadForPropertyId, uploadFile)
+      await refetch()
+      toast({ title: t("properties.documentUploaded"), description: t("properties.documentUploadedDesc") })
+      setUploadFile(null)
+      setUploadDialogOpen(false)
+      setUploadForPropertyId(null)
+    } catch (error: any) {
+      console.error('Document upload error:', error)
+      toast({ title: t("common.error"), description: error?.message || t("properties.documentUploadError"), variant: "destructive" })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleDeleteDocument = async (propertyId: string, documentUrl: string) => {
+    if (!window.confirm(t("properties.confirmDeleteDocument"))) return
+    try {
+      await deletePropertyDocument(propertyId, documentUrl)
+      await refetch()
+      toast({ title: t("properties.documentDeleted"), description: t("properties.documentDeletedDesc") })
+    } catch (error: any) {
+      toast({ title: t("common.error"), description: error?.message || t("properties.documentDeleteError"), variant: "destructive" })
+    }
+  }
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0]
+      if (droppedFile.type === "application/pdf") {
+        setUploadFile(droppedFile)
+      } else {
+        toast({ title: t("common.error"), description: t("contracts.pdfOnly"), variant: "destructive" })
+      }
+    }
+  }
+
   const handleExportFormat = (format: ExportFormat) => {
     if (filteredProperties.length === 0) {
       toast({
@@ -151,6 +200,7 @@ export default function PropertiesContent() {
               <TableHead>{t("properties.occupancy")}</TableHead>
               <TableHead>{t("properties.monthlyRevenue")}</TableHead>
               <TableHead>{t("properties.currentPropertyValue")}</TableHead>
+              <TableHead>{t("properties.document")}</TableHead>
               <TableHead className="text-right rtl:text-left">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -158,14 +208,14 @@ export default function PropertiesContent() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 8 }).map((_, j) => (
+                  {Array.from({ length: 9 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : filteredProperties.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   {t("properties.noProperties")}
                 </TableCell>
               </TableRow>
@@ -190,6 +240,19 @@ export default function PropertiesContent() {
                   </TableCell>
                   <TableCell>{formatCurrency(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
                   <TableCell>{formatCurrency(property.current_property_value || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell>
+                    {property.document_url ? (
+                      <button
+                        onClick={() => setPdfPreviewUrl(property.document_url)}
+                        className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline cursor-pointer"
+                      >
+                        <FileText className="h-4 w-4" />
+                        {t("properties.viewDocument")}
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">{t("properties.noDocument")}</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right rtl:text-left">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -212,6 +275,29 @@ export default function PropertiesContent() {
                         <DropdownMenuItem onClick={() => handleViewTenants(property.id)}>
                           {t("properties.viewTenants")}
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
+                          setUploadForPropertyId(property.id)
+                          setUploadDialogOpen(true)
+                        }}>
+                          <Upload className="me-2 h-4 w-4" />
+                          {t("properties.uploadDocument")}
+                        </DropdownMenuItem>
+                        {property.document_url && (
+                          <>
+                            <DropdownMenuItem onClick={() => setPdfPreviewUrl(property.document_url)}>
+                              <FileText className="me-2 h-4 w-4" />
+                              {t("properties.viewDocument")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteDocument(property.id, property.document_url)}
+                            >
+                              <Trash2 className="me-2 h-4 w-4" />
+                              {t("properties.deleteDocument")}
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600"
@@ -275,6 +361,88 @@ export default function PropertiesContent() {
         </div>
       </Tabs>
     </div>
+    {/* Upload Document Dialog */}
+    <Dialog open={uploadDialogOpen} onOpenChange={(isOpen) => {
+      setUploadDialogOpen(isOpen)
+      if (!isOpen) { setUploadFile(null); setUploadForPropertyId(null) }
+    }}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{t("properties.uploadDocument")}</DialogTitle>
+          <DialogDescription>{t("properties.uploadDocumentDesc")}</DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          {uploadFile ? (
+            <Alert variant="outline" className="border-primary/50">
+              <FileText className="h-4 w-4" />
+              <AlertTitle>{t("contracts.fileSelected")}</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span className="truncate pe-4">{uploadFile.name}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-muted-foreground">
+                    {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setUploadFile(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div
+              className="border-2 border-dashed rounded-md p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleFileDrop}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".pdf"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) setUploadFile(e.target.files[0])
+                }}
+              />
+              <Upload className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-lg font-medium mb-2">{t("properties.uploadDocument")}</p>
+              <p className="text-sm text-muted-foreground text-center mb-4">{t("contracts.supportedFormats")}</p>
+              <Button variant="outline" type="button">{t("contracts.selectFile")}</Button>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setUploadDialogOpen(false)} disabled={isUploading}>
+            {t("common.cancel")}
+          </Button>
+          <Button type="button" onClick={handleUploadDocument} disabled={isUploading || !uploadFile}>
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("common.saving")}
+              </>
+            ) : (
+              t("common.save")
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    {/* PDF Preview Dialog */}
+    <Dialog open={!!pdfPreviewUrl} onOpenChange={(isOpen) => { if (!isOpen) setPdfPreviewUrl(null) }}>
+      <DialogContent className="sm:max-w-[95vw] md:max-w-[900px] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 py-4 shrink-0 border-b">
+          <DialogTitle>{t("properties.viewDocument")}</DialogTitle>
+        </DialogHeader>
+        {pdfPreviewUrl && (
+          <iframe
+            src={pdfPreviewUrl}
+            className="w-full flex-1 min-h-0 border-0"
+            title="Property Document PDF"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   )
 }

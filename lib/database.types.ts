@@ -30,6 +30,7 @@ export interface Database {
             airConditioning: boolean
           }
           image_urls: string[]
+          document_url: string | null
           created_at: string
           updated_at: string
         }
@@ -53,6 +54,7 @@ export interface Database {
             airConditioning: boolean
           }
           image_urls?: string[]
+          document_url?: string | null
           created_at?: string
           updated_at?: string
         }
