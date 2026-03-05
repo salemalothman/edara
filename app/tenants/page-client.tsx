@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Download, Search, MoreHorizontal, FileText, ExternalLink, UserPlus, ChevronDown } from "lucide-react"
+import { Download, Search, MoreHorizontal, FileText, UserPlus, ChevronDown } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useFormatter } from "@/hooks/use-formatter"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AddTenantDialog } from "@/components/tenants/add-tenant-dialog"
@@ -39,6 +40,7 @@ export function TenantsPageClient() {
   const [addTenantOpen, setAddTenantOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [contractForTenantId, setContractForTenantId] = useState<string | null>(null)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
 
   // Get the most recent (active) contract for a tenant
   const getActiveContract = (tenant: any) => {
@@ -122,28 +124,6 @@ export function TenantsPageClient() {
       case "former": return "bg-gray-100 text-gray-800 hover:bg-gray-100"
       default: return "bg-green-100 text-green-800 hover:bg-green-100"
     }
-  }
-
-  const contractStatusBadge = (contract: any) => {
-    if (!contract) return null
-    const endDate = new Date(contract.end_date)
-    const now = new Date()
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-
-    if (endDate < now) return "bg-red-100 text-red-800 hover:bg-red-100"
-    if (endDate < thirtyDaysFromNow) return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-    return "bg-green-100 text-green-800 hover:bg-green-100"
-  }
-
-  const contractStatusLabel = (contract: any) => {
-    if (!contract) return null
-    const endDate = new Date(contract.end_date)
-    const now = new Date()
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-
-    if (endDate < now) return "Expired"
-    if (endDate < thirtyDaysFromNow) return "Expiring Soon"
-    return "Active"
   }
 
   return (
@@ -270,32 +250,14 @@ export function TenantsPageClient() {
                           </TableCell>
                           <TableCell>{tenant.move_in_date ? formatDate(new Date(tenant.move_in_date)) : "—"}</TableCell>
                           <TableCell>
-                            {contract ? (
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge className={contractStatusBadge(contract)}>
-                                    {contractStatusLabel(contract)}
-                                  </Badge>
-                                </div>
-                                <span className="text-xs text-muted-foreground">
-                                  {contract.contract_id} &middot; {formatCurrency(Number(contract.rent_amount))}/mo
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(new Date(contract.start_date))} — {formatDate(new Date(contract.end_date))}
-                                </span>
-                                {contract.file_url && (
-                                  <a
-                                    href={contract.file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline w-fit"
-                                  >
-                                    <FileText className="h-3 w-3" />
-                                    View Contract
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                )}
-                              </div>
+                            {contract?.file_url ? (
+                              <button
+                                onClick={() => setPdfPreviewUrl(contract.file_url)}
+                                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline cursor-pointer"
+                              >
+                                <FileText className="h-4 w-4" />
+                                {t("contracts.viewContractPdf")}
+                              </button>
                             ) : (
                               <span className="text-muted-foreground text-sm">No contract</span>
                             )}
@@ -318,9 +280,9 @@ export function TenantsPageClient() {
                                   {t("contracts.addContract")}
                                 </DropdownMenuItem>
                                 {contract?.file_url && (
-                                  <DropdownMenuItem onClick={() => window.open(contract.file_url, "_blank")}>
+                                  <DropdownMenuItem onClick={() => setPdfPreviewUrl(contract.file_url)}>
                                     <FileText className="me-2 h-4 w-4" />
-                                    View Contract PDF
+                                    {t("contracts.viewContractPdf")}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
@@ -363,6 +325,20 @@ export function TenantsPageClient() {
         </div>
       </Tabs>
     </div>
+    <Dialog open={!!pdfPreviewUrl} onOpenChange={(isOpen) => { if (!isOpen) setPdfPreviewUrl(null) }}>
+      <DialogContent className="sm:max-w-[900px] h-[85vh]">
+        <DialogHeader>
+          <DialogTitle>{t("contracts.viewContractPdf")}</DialogTitle>
+        </DialogHeader>
+        {pdfPreviewUrl && (
+          <iframe
+            src={pdfPreviewUrl}
+            className="w-full flex-1 rounded-md border"
+            title="Contract PDF"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   )
 }

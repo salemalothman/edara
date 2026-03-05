@@ -45,3 +45,29 @@ export async function uploadContractFile(file: File): Promise<string> {
   const { data } = supabase.storage.from('documents').getPublicUrl(path)
   return data.publicUrl
 }
+
+export async function uploadContractForTenant(
+  tenantId: string,
+  propertyId: string,
+  unitId: string,
+  file: File
+) {
+  const fileUrl = await uploadContractFile(file)
+  const now = new Date().toISOString().split('T')[0]
+  const { data, error } = await supabase
+    .from('contracts')
+    .insert({
+      contract_id: `CT-${Date.now()}`,
+      tenant_id: tenantId,
+      property_id: propertyId,
+      unit_id: unitId,
+      start_date: now,
+      end_date: now,
+      rent_amount: 0,
+      file_url: fileUrl,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
