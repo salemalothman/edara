@@ -37,34 +37,49 @@ export async function insertContract(contract: {
 }
 
 export async function uploadContractFile(uri: string, fileName: string): Promise<string> {
+  const sanitizedName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `contracts/${Date.now()}-${sanitizedName}`
+
   const response = await fetch(uri)
-  const blob = await response.blob()
-  const path = `contracts/${Date.now()}-${fileName}`
+  const arrayBuffer = await response.arrayBuffer()
   const { error } = await supabase.storage
     .from('documents')
-    .upload(path, blob)
-  if (error) throw error
+    .upload(path, arrayBuffer, {
+      contentType: 'application/pdf',
+      upsert: false,
+    })
+  if (error) {
+    console.error('Storage upload error:', error)
+    throw new Error(`File upload failed: ${error.message}`)
+  }
+
   const { data } = supabase.storage.from('documents').getPublicUrl(path)
   return data.publicUrl
 }
 
 export async function uploadContractForTenant(tenantId: string, propertyId: string, unitId: string, fileUri: string, fileName: string) {
   const fileUrl = await uploadContractFile(fileUri, fileName)
+
   const now = new Date().toISOString().split('T')[0]
+  const contractData: Record<string, any> = {
+    contract_id: `CT-${Date.now()}`,
+    tenant_id: tenantId,
+    start_date: now,
+    end_date: now,
+    rent_amount: 0,
+    file_url: fileUrl,
+  }
+  if (propertyId) contractData.property_id = propertyId
+  if (unitId) contractData.unit_id = unitId
+
   const { data, error } = await supabase
     .from('contracts')
-    .insert({
-      contract_id: `CT-${Date.now()}`,
-      tenant_id: tenantId,
-      property_id: propertyId,
-      unit_id: unitId,
-      start_date: now,
-      end_date: now,
-      rent_amount: 0,
-      file_url: fileUrl,
-    })
+    .insert(contractData)
     .select()
     .single()
-  if (error) throw error
+  if (error) {
+    console.error('Contract insert error:', error)
+    throw new Error(`Contract save failed: ${error.message}`)
+  }
   return data
 }

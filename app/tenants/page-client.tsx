@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Download, Search, MoreHorizontal, FileText, UserPlus, ChevronDown } from "lucide-react"
+import { Download, Search, MoreHorizontal, FileText, UserPlus, ChevronDown, Trash2 } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useFormatter } from "@/hooks/use-formatter"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
 import { downloadExport, type ExportFormat } from "@/utils/export"
 import { fetchTenants, updateTenant, deleteTenant } from "@/lib/services/tenants"
+import { deleteContract } from "@/lib/services/contracts"
 
 export function TenantsPageClient() {
   const { t } = useLanguage()
@@ -88,6 +89,17 @@ export function TenantsPageClient() {
       toast({ title: "Success", description: "Tenant removed successfully" })
     } catch {
       toast({ title: "Error", description: "Failed to remove tenant", variant: "destructive" })
+    }
+  }
+
+  const handleDeleteContract = async (contractId: string, fileUrl: string | null) => {
+    if (!window.confirm(t("contracts.confirmDeleteContract"))) return
+    try {
+      await deleteContract(contractId, fileUrl)
+      refetch()
+      toast({ title: t("contracts.deleteSuccess"), description: t("contracts.contractDeleted") })
+    } catch (error: any) {
+      toast({ title: t("common.error"), description: error?.message || t("contracts.deleteError"), variant: "destructive" })
     }
   }
 
@@ -285,6 +297,15 @@ export function TenantsPageClient() {
                                     {t("contracts.viewContractPdf")}
                                   </DropdownMenuItem>
                                 )}
+                                {contract && (
+                                  <DropdownMenuItem
+                                    className="text-red-600"
+                                    onClick={() => handleDeleteContract(contract.id, contract.file_url)}
+                                  >
+                                    <Trash2 className="me-2 h-4 w-4" />
+                                    {t("contracts.deleteContract")}
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                                   Change Status
@@ -326,14 +347,14 @@ export function TenantsPageClient() {
       </Tabs>
     </div>
     <Dialog open={!!pdfPreviewUrl} onOpenChange={(isOpen) => { if (!isOpen) setPdfPreviewUrl(null) }}>
-      <DialogContent className="sm:max-w-[900px] h-[85vh]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[95vw] md:max-w-[900px] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 py-4 shrink-0 border-b">
           <DialogTitle>{t("contracts.viewContractPdf")}</DialogTitle>
         </DialogHeader>
         {pdfPreviewUrl && (
           <iframe
             src={pdfPreviewUrl}
-            className="w-full flex-1 rounded-md border"
+            className="w-full flex-1 min-h-0 border-0"
             title="Contract PDF"
           />
         )}

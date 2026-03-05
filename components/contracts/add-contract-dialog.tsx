@@ -107,10 +107,11 @@ export function AddContractDialog({ onSuccess, defaultTenantId, open: controlled
       })
       setFile(null)
       setOpen(false)
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Contract upload error:', error)
       toast({
         title: t("common.error"),
-        description: t("contracts.addError"),
+        description: error?.message || t("contracts.addError"),
         variant: "destructive",
       })
     } finally {

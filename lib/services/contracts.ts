@@ -37,11 +37,21 @@ export async function insertContract(contract: {
 }
 
 export async function uploadContractFile(file: File): Promise<string> {
-  const path = `contracts/${Date.now()}-${file.name}`
+  const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `contracts/${Date.now()}-${fileName}`
+
+  const arrayBuffer = await file.arrayBuffer()
   const { error } = await supabase.storage
     .from('documents')
-    .upload(path, file)
-  if (error) throw error
+    .upload(path, arrayBuffer, {
+      contentType: file.type || 'application/pdf',
+      upsert: false,
+    })
+  if (error) {
+    console.error('Storage upload error:', error)
+    throw new Error(`File upload failed: ${error.message}`)
+  }
+
   const { data } = supabase.storage.from('documents').getPublicUrl(path)
   return data.publicUrl
 }
@@ -52,22 +62,59 @@ export async function uploadContractForTenant(
   unitId: string,
   file: File
 ) {
+  // Step 1: Upload the file first
   const fileUrl = await uploadContractFile(file)
+
+  // Step 2: Only insert DB record after confirmed upload
   const now = new Date().toISOString().split('T')[0]
+  const contractData: Record<string, any> = {
+    contract_id: `CT-${Date.now()}`,
+    tenant_id: tenantId,
+    start_date: now,
+    end_date: now,
+    rent_amount: 0,
+    file_url: fileUrl,
+  }
+  if (propertyId) contractData.property_id = propertyId
+  if (unitId) contractData.unit_id = unitId
+
   const { data, error } = await supabase
     .from('contracts')
-    .insert({
-      contract_id: `CT-${Date.now()}`,
-      tenant_id: tenantId,
-      property_id: propertyId,
-      unit_id: unitId,
-      start_date: now,
-      end_date: now,
-      rent_amount: 0,
-      file_url: fileUrl,
-    })
+    .insert(contractData)
     .select()
     .single()
-  if (error) throw error
+  if (error) {
+    console.error('Contract insert error:', error)
+    throw new Error(`Contract save failed: ${error.message}`)
+  }
   return data
+}
+
+export async function deleteContract(contractId: string, fileUrl: string | null) {
+  // Step 1: Delete file from storage if it exists
+  if (fileUrl) {
+    try {
+      const url = new URL(fileUrl)
+      const pathMatch = url.pathname.match(/\/object\/public\/documents\/(.+)/)
+      if (pathMatch) {
+        const storagePath = decodeURIComponent(pathMatch[1])
+        const { error } = await supabase.storage
+          .from('documents')
+          .remove([storagePath])
+        if (error) console.error('Storage delete error:', error)
+      }
+    } catch (e) {
+      console.error('Failed to parse file URL for deletion:', e)
+    }
+  }
+
+  // Step 2: Delete the contract record
+  const { error } = await supabase
+    .from('contracts')
+    .delete()
+    .eq('id', contractId)
+  if (error) {
+    console.error('Contract delete error:', error)
+    throw new Error(`Contract delete failed: ${error.message}`)
+  }
 }
