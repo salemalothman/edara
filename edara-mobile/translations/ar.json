@@ -635,6 +635,19 @@
     "vacant": "شاغر",
     "in_progress": "قيد التنفيذ"
   },
+  "accounting": {
+    "title": "المحاسبة",
+    "paidTenants": "المستأجرون الذين دفعوا",
+    "pendingTenants": "المستأجرون بانتظار الدفع",
+    "allExpenses": "جميع المصروفات",
+    "noPaidTenants": "لا توجد فواتير مدفوعة.",
+    "noPendingTenants": "لا توجد فواتير معلقة.",
+    "noExpenses": "لا توجد مصروفات.",
+    "netTotal": "الصافي الإجمالي",
+    "netTotalDesc": "إجمالي المدفوعات - إجمالي المصروفات",
+    "report": "تقرير المحاسبة",
+    "generateReport": "إنشاء تقرير"
+  },
   "validation": {
     "error": "خطأ في التحقق",
     "requiredFields": "يرجى ملء جميع الحقول المطلوبة"

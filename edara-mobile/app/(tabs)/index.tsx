@@ -1,9 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Dimensions, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Building2, Users, FileText, Receipt, Wrench, Bell, Settings, TrendingUp, TrendingDown, DollarSign } from 'lucide-react-native'
-// Building2, Users, FileText, Receipt, Wrench used in quick actions
+import { Building2, Users, FileText, Receipt, Wrench, Bell, Settings, TrendingUp, TrendingDown, DollarSign, ChevronDown, ChevronUp, Share2 } from 'lucide-react-native'
 import { useLanguage } from '../../contexts/language-context'
 import { useTheme } from '../../contexts/theme-context'
 import { useFormatter } from '../../hooks/use-formatter'
@@ -12,11 +11,15 @@ import { fetchProperties } from '../../lib/services/properties'
 import { fetchUnits } from '../../lib/services/units'
 import { fetchInvoices } from '../../lib/services/invoices'
 import { fetchMaintenanceRequests } from '../../lib/services/maintenance'
-import { fetchExpenses } from '../../lib/services/expenses'
+import { fetchExpenses, fetchApprovedMaintenanceCosts } from '../../lib/services/expenses'
 import { fetchTenants } from '../../lib/services/tenants'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { Button } from '../../components/ui/Button'
+import * as Print from 'expo-print'
+import * as Sharing from 'expo-sharing'
+import * as FileSystem from 'expo-file-system'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 
@@ -33,14 +36,16 @@ export default function DashboardScreen() {
   const { data: invoices, loading: invLoading, refetch: refetchInv } = useSupabaseQuery(fetchInvoices)
   const { data: maintenance, loading: maintLoading, refetch: refetchMaint } = useSupabaseQuery(fetchMaintenanceRequests)
   const { data: expensesData, loading: expLoading, refetch: refetchExp } = useSupabaseQuery(fetchExpenses)
+  const { data: maintCosts, loading: maintCostLoading, refetch: refetchMaintCost } = useSupabaseQuery(fetchApprovedMaintenanceCosts)
   const { data: tenants, loading: tenLoading, refetch: refetchTen } = useSupabaseQuery(fetchTenants)
 
   const [selectedPeriod, setSelectedPeriod] = useState<'1m' | '3m' | '6m'>('6m')
+  const [showAccounting, setShowAccounting] = useState(false)
 
-  const loading = propsLoading || unitsLoading || invLoading || maintLoading || expLoading || tenLoading
+  const loading = propsLoading || unitsLoading || invLoading || maintLoading || expLoading || maintCostLoading || tenLoading
 
   useFocusEffect(useCallback(() => {
-    refetchProps(); refetchUnits(); refetchInv(); refetchMaint(); refetchExp(); refetchTen()
+    refetchProps(); refetchUnits(); refetchInv(); refetchMaint(); refetchExp(); refetchMaintCost(); refetchTen()
   }, []))
 
   const onRefresh = useCallback(() => {
@@ -49,6 +54,7 @@ export default function DashboardScreen() {
     refetchInv()
     refetchMaint()
     refetchExp()
+    refetchMaintCost()
     refetchTen()
   }, [])
 
@@ -124,6 +130,103 @@ export default function DashboardScreen() {
   }, [invoices, maintenance, expensesData, periodStart])
 
   const recentInvoices = invoices.slice(0, 5)
+
+  // Accounting data
+  const accountingData = useMemo(() => {
+    const paidMap = new Map<string, { name: string; amount: number }>()
+    const pendingMap = new Map<string, { name: string; amount: number }>()
+
+    invoices.forEach((inv: any) => {
+      const tenantName = inv.tenant ? `${inv.tenant.first_name} ${inv.tenant.last_name}` : 'Unknown'
+      const tenantId = inv.tenant_id || inv.id
+      const amount = Number(inv.amount) || 0
+
+      if (inv.status === 'paid') {
+        const existing = paidMap.get(tenantId)
+        paidMap.set(tenantId, { name: tenantName, amount: (existing?.amount || 0) + amount })
+      } else {
+        const existing = pendingMap.get(tenantId)
+        pendingMap.set(tenantId, { name: tenantName, amount: (existing?.amount || 0) + amount })
+      }
+    })
+
+    const allExpenses: { description: string; amount: number }[] = []
+    expensesData.forEach((e: any) => {
+      allExpenses.push({ description: e.description || 'Expense', amount: Number(e.amount) || 0 })
+    })
+    maintCosts.forEach((m: any) => {
+      allExpenses.push({ description: m.title || m.category || 'Maintenance', amount: Number(m.cost) || 0 })
+    })
+
+    const paidTenants = Array.from(paidMap.values()).sort((a, b) => b.amount - a.amount)
+    const pendingTenants = Array.from(pendingMap.values()).sort((a, b) => b.amount - a.amount)
+    const totalPaid = paidTenants.reduce((s, r) => s + r.amount, 0)
+    const totalPending = pendingTenants.reduce((s, r) => s + r.amount, 0)
+    const totalExpenses = allExpenses.reduce((s, r) => s + r.amount, 0)
+    const netTotal = totalPaid - totalExpenses
+
+    return { paidTenants, pendingTenants, expenses: allExpenses, totalPaid, totalPending, totalExpenses, netTotal }
+  }, [invoices, expensesData, maintCosts])
+
+  const handleAccountingReport = async () => {
+    try {
+      const { paidTenants, pendingTenants, expenses, totalPaid, totalPending, totalExpenses, netTotal } = accountingData
+
+      const tableStyle = `style="width:100%;border-collapse:collapse;margin-bottom:20px"`
+      const thStyle = `style="background:#2980b3;color:#fff;padding:8px 12px;text-align:start;font-size:13px"`
+      const tdStyle = `style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px"`
+      const totalRow = `style="font-weight:bold;background:#f5f5f5;padding:8px 12px;font-size:13px"`
+
+      const buildTable = (title: string, headers: string[], rows: string[][], total: string) => `
+        <h3 style="margin:20px 0 8px;color:#333">${title}</h3>
+        <table ${tableStyle}>
+          <thead><tr>${headers.map(h => `<th ${thStyle}>${h}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${rows.map(r => `<tr>${r.map(c => `<td ${tdStyle}>${c}</td>`).join('')}</tr>`).join('')}
+            <tr><td ${totalRow}>${t('invoices.total')}</td><td ${totalRow}>${total}</td></tr>
+          </tbody>
+        </table>`
+
+      const html = `
+        <html dir="${language === 'ar' ? 'rtl' : 'ltr'}">
+        <head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:24px;color:#333}</style></head>
+        <body>
+          <h1 style="color:#2980b3;margin-bottom:4px">${t('accounting.title')}</h1>
+          <p style="color:#888;margin-top:0">${new Date().toLocaleDateString(language === 'ar' ? 'ar-KW' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          ${buildTable(
+            t('accounting.paidTenants'),
+            [t('tenants.name'), t('invoices.amount')],
+            paidTenants.map(r => [r.name, formatCurrency(r.amount)]),
+            formatCurrency(totalPaid)
+          )}
+          ${buildTable(
+            t('accounting.pendingTenants'),
+            [t('tenants.name'), t('invoices.amount')],
+            pendingTenants.map(r => [r.name, formatCurrency(r.amount)]),
+            formatCurrency(totalPending)
+          )}
+          ${buildTable(
+            t('accounting.allExpenses'),
+            [t('expenses.description'), t('invoices.amount')],
+            expenses.map(r => [r.description, formatCurrency(r.amount)]),
+            formatCurrency(totalExpenses)
+          )}
+          <div style="margin-top:24px;padding:16px;background:${netTotal >= 0 ? '#e8f5e9' : '#fce4ec'};border-radius:8px">
+            <h3 style="margin:0 0 8px;color:${netTotal >= 0 ? '#2e7d32' : '#c62828'}">${t('accounting.netTotal')}</h3>
+            <p style="margin:4px 0;color:#555">${t('accounting.paidTenants')}: ${formatCurrency(totalPaid)}</p>
+            <p style="margin:4px 0;color:#555">${t('accounting.allExpenses')}: ${formatCurrency(totalExpenses)}</p>
+            <p style="margin:8px 0 0;font-size:20px;font-weight:bold;color:${netTotal >= 0 ? '#2e7d32' : '#c62828'}">${formatCurrency(netTotal)}</p>
+          </div>
+        </body></html>`
+
+      const { uri } = await Print.printToFileAsync({ html })
+      const pdfPath = `${FileSystem.documentDirectory}accounting-report.pdf`
+      await FileSystem.moveAsync({ from: uri, to: pdfPath })
+      await Sharing.shareAsync(pdfPath, { mimeType: 'application/pdf', dialogTitle: t('accounting.report') })
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e.message || 'Failed to generate report')
+    }
+  }
 
   if (loading && properties.length === 0) {
     return <LoadingSpinner />
@@ -380,6 +483,108 @@ export default function DashboardScreen() {
           </Card>
         ))}
 
+        {/* Accounting Section */}
+        <TouchableOpacity
+          style={[styles.accountingHeader, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setShowAccounting(!showAccounting)}
+        >
+          <View style={styles.accountingHeaderLeft}>
+            <Receipt size={20} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t('accounting.title')}</Text>
+          </View>
+          {showAccounting ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
+        </TouchableOpacity>
+
+        {showAccounting && (
+          <View style={styles.accountingContent}>
+            {/* Paid Tenants */}
+            <Card style={styles.accountingCard}>
+              <Text style={[styles.accountingCardTitle, { color: colors.text }]}>{t('accounting.paidTenants')}</Text>
+              {accountingData.paidTenants.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('accounting.noPaidTenants')}</Text>
+              ) : (
+                accountingData.paidTenants.map((row, i) => (
+                  <View key={i} style={[styles.accountingRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.accountingName, { color: colors.text }]}>{row.name}</Text>
+                    <Text style={[styles.accountingAmount, { color: colors.success }]}>{formatCurrency(row.amount)}</Text>
+                  </View>
+                ))
+              )}
+              <View style={[styles.accountingTotalRow, { backgroundColor: colors.background }]}>
+                <Text style={[styles.accountingTotalLabel, { color: colors.text }]}>{t('invoices.total')}</Text>
+                <Text style={[styles.accountingTotalValue, { color: colors.success }]}>{formatCurrency(accountingData.totalPaid)}</Text>
+              </View>
+            </Card>
+
+            {/* Pending Tenants */}
+            <Card style={styles.accountingCard}>
+              <Text style={[styles.accountingCardTitle, { color: colors.text }]}>{t('accounting.pendingTenants')}</Text>
+              {accountingData.pendingTenants.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('accounting.noPendingTenants')}</Text>
+              ) : (
+                accountingData.pendingTenants.map((row, i) => (
+                  <View key={i} style={[styles.accountingRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.accountingName, { color: colors.text }]}>{row.name}</Text>
+                    <Text style={[styles.accountingAmount, { color: colors.warning }]}>{formatCurrency(row.amount)}</Text>
+                  </View>
+                ))
+              )}
+              <View style={[styles.accountingTotalRow, { backgroundColor: colors.background }]}>
+                <Text style={[styles.accountingTotalLabel, { color: colors.text }]}>{t('invoices.total')}</Text>
+                <Text style={[styles.accountingTotalValue, { color: colors.warning }]}>{formatCurrency(accountingData.totalPending)}</Text>
+              </View>
+            </Card>
+
+            {/* All Expenses */}
+            <Card style={styles.accountingCard}>
+              <Text style={[styles.accountingCardTitle, { color: colors.text }]}>{t('accounting.allExpenses')}</Text>
+              {accountingData.expenses.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('accounting.noExpenses')}</Text>
+              ) : (
+                accountingData.expenses.map((row, i) => (
+                  <View key={i} style={[styles.accountingRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.accountingName, { color: colors.text }]} numberOfLines={1}>{row.description}</Text>
+                    <Text style={[styles.accountingAmount, { color: colors.danger }]}>{formatCurrency(row.amount)}</Text>
+                  </View>
+                ))
+              )}
+              <View style={[styles.accountingTotalRow, { backgroundColor: colors.background }]}>
+                <Text style={[styles.accountingTotalLabel, { color: colors.text }]}>{t('invoices.total')}</Text>
+                <Text style={[styles.accountingTotalValue, { color: colors.danger }]}>{formatCurrency(accountingData.totalExpenses)}</Text>
+              </View>
+            </Card>
+
+            {/* Net Total */}
+            <Card style={[styles.accountingCard, { borderLeftWidth: 4, borderLeftColor: accountingData.netTotal >= 0 ? colors.success : colors.danger }]}>
+              <Text style={[styles.accountingCardTitle, { color: colors.text }]}>{t('accounting.netTotal')}</Text>
+              <Text style={[styles.netTotalDesc, { color: colors.textSecondary }]}>{t('accounting.netTotalDesc')}</Text>
+              <View style={styles.netTotalBreakdown}>
+                <View style={styles.netTotalItem}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t('accounting.paidTenants')}</Text>
+                  <Text style={{ color: colors.success, fontSize: 15, fontWeight: '600' }}>{formatCurrency(accountingData.totalPaid)}</Text>
+                </View>
+                <View style={styles.netTotalItem}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t('accounting.allExpenses')}</Text>
+                  <Text style={{ color: colors.danger, fontSize: 15, fontWeight: '600' }}>{formatCurrency(accountingData.totalExpenses)}</Text>
+                </View>
+              </View>
+              <View style={[styles.netTotalValueRow, { borderTopColor: colors.border }]}>
+                <Text style={[styles.netTotalValueText, { color: accountingData.netTotal >= 0 ? colors.success : colors.danger }]}>
+                  {formatCurrency(accountingData.netTotal)}
+                </Text>
+              </View>
+            </Card>
+
+            {/* Generate Report Button */}
+            <Button
+              title={t('accounting.generateReport')}
+              onPress={handleAccountingReport}
+              icon={<Share2 size={18} color="#fff" />}
+              style={{ marginBottom: 8 }}
+            />
+          </View>
+        )}
+
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
@@ -459,5 +664,25 @@ const styles = StyleSheet.create({
   invoiceTenant: { fontSize: 13, marginTop: 2 },
   invoiceRight: { alignItems: 'flex-end', gap: 4 },
   invoiceAmount: { fontSize: 15, fontWeight: '700' },
+
+  // Accounting
+  accountingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
+  accountingHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  accountingContent: { gap: 12, marginBottom: 12 },
+  accountingCard: { paddingVertical: 12 },
+  accountingCardTitle: { fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  accountingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1 },
+  accountingName: { fontSize: 14, flex: 1 },
+  accountingAmount: { fontSize: 14, fontWeight: '600' },
+  accountingTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 6, marginTop: 6 },
+  accountingTotalLabel: { fontSize: 14, fontWeight: '700' },
+  accountingTotalValue: { fontSize: 15, fontWeight: '800' },
+  emptyText: { fontSize: 13, fontStyle: 'italic', paddingVertical: 8 },
+  netTotalDesc: { fontSize: 12, marginBottom: 12 },
+  netTotalBreakdown: { gap: 8, marginBottom: 12 },
+  netTotalItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  netTotalValueRow: { borderTopWidth: 1, paddingTop: 12, alignItems: 'center' },
+  netTotalValueText: { fontSize: 24, fontWeight: '800' },
+
   bottomSpacer: { height: 24 },
 })

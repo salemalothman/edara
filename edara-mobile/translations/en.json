@@ -635,6 +635,19 @@
     "vacant": "Vacant",
     "in_progress": "In Progress"
   },
+  "accounting": {
+    "title": "Accounting",
+    "paidTenants": "Paid Tenants",
+    "pendingTenants": "Pending Tenants",
+    "allExpenses": "All Expenses",
+    "noPaidTenants": "No paid invoices found.",
+    "noPendingTenants": "No pending invoices found.",
+    "noExpenses": "No expenses found.",
+    "netTotal": "Net Total",
+    "netTotalDesc": "Total Paid - Total Expenses",
+    "report": "Accounting Report",
+    "generateReport": "Generate Report"
+  },
   "validation": {
     "error": "Validation Error",
     "requiredFields": "Please fill in all required fields"
