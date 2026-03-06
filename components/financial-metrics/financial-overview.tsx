@@ -8,8 +8,9 @@ import { FinancialMetricsChart } from "@/components/financial-metrics/financial-
 import { FinancialRatios } from "@/components/financial-metrics/financial-ratios"
 import { MaintenanceCostBreakdown } from "@/components/financial-metrics/maintenance-cost-breakdown"
 import { PropertyPerformanceTable } from "@/components/financial-metrics/property-performance-table"
+import { AccountingTab, useAccountingData } from "@/components/financial-metrics/accounting-tab"
 import { Button } from "@/components/ui/button"
-import { Download, FileText } from "lucide-react"
+import { Download, FileText, Receipt } from "lucide-react"
 import { useState } from "react"
 import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
 import { downloadExport, type ExportFormat } from "@/utils/export"
@@ -25,6 +26,8 @@ export function FinancialOverview({ period = "6m" }: { period?: string }) {
   const { formatCurrency, formatPercentage } = useFormatter()
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
+  const [accountingReportDialogOpen, setAccountingReportDialogOpen] = useState(false)
+  const { data: accountingData } = useAccountingData()
 
   const { data: invoices } = useSupabaseQuery(fetchInvoices)
   const { data: expensesData } = useSupabaseQuery(fetchExpenses)
@@ -118,10 +121,52 @@ export function FinancialOverview({ period = "6m" }: { period?: string }) {
     })
   }
 
+  const handleAccountingReport = async (format: ExportFormat) => {
+    const { paidTenants, pendingTenants, expenses, totalPaid, totalPending, totalExpenses, netTotal } = accountingData
+
+    const paidRows: (string | number)[][] = paidTenants.map(row => [row.name, formatCurrency(row.amount)])
+    paidRows.push([t("common.total"), formatCurrency(totalPaid)])
+
+    const pendingRows: (string | number)[][] = pendingTenants.map(row => [row.name, formatCurrency(row.amount)])
+    pendingRows.push([t("common.total"), formatCurrency(totalPending)])
+
+    const expenseRows: (string | number)[][] = expenses.map(row => [row.description, formatCurrency(row.amount)])
+    expenseRows.push([t("common.total"), formatCurrency(totalExpenses)])
+
+    downloadExport(format, {
+      headers: [t("tenants.name"), t("invoices.amount")],
+      rows: paidRows,
+      title: t("accounting.title"),
+      filename: "accounting-report",
+      sections: [
+        {
+          title: t("accounting.pendingTenants"),
+          headers: [t("tenants.name"), t("invoices.amount")],
+          rows: pendingRows,
+        },
+        {
+          title: t("accounting.allExpenses"),
+          headers: [t("expenses.description"), t("invoices.amount")],
+          rows: expenseRows,
+        },
+        {
+          title: t("accounting.netTotal"),
+          headers: [t("accounting.netTotalDesc"), ""],
+          rows: [
+            [t("accounting.paidTenants"), formatCurrency(totalPaid)],
+            [t("accounting.allExpenses"), formatCurrency(totalExpenses)],
+            [t("accounting.netTotal"), formatCurrency(netTotal)],
+          ],
+        },
+      ],
+    })
+  }
+
   return (
     <>
     <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
     <ExportFormatDialog open={reportDialogOpen} onOpenChange={setReportDialogOpen} onSelect={handleReportFormat} />
+    <ExportFormatDialog open={accountingReportDialogOpen} onOpenChange={setAccountingReportDialogOpen} onSelect={handleAccountingReport} />
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
@@ -129,6 +174,10 @@ export function FinancialOverview({ period = "6m" }: { period?: string }) {
           <CardDescription>{t("financial.description")}</CardDescription>
         </div>
         <div className="flex space-x-2 rtl:space-x-reverse">
+          <Button variant="outline" size="sm" onClick={() => setAccountingReportDialogOpen(true)}>
+            <Receipt className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
+            {t("accounting.report")}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)}>
             <FileText className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
             {t("financial.generateReport")}
@@ -146,6 +195,7 @@ export function FinancialOverview({ period = "6m" }: { period?: string }) {
             <TabsTrigger value="ratios">{t("financial.ratios")}</TabsTrigger>
             <TabsTrigger value="maintenance">{t("financial.maintenance")}</TabsTrigger>
             <TabsTrigger value="properties">{t("financial.properties")}</TabsTrigger>
+            <TabsTrigger value="accounting">{t("accounting.title")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -162,6 +212,10 @@ export function FinancialOverview({ period = "6m" }: { period?: string }) {
 
           <TabsContent value="properties" className="space-y-4">
             <PropertyPerformanceTable />
+          </TabsContent>
+
+          <TabsContent value="accounting" className="space-y-4">
+            <AccountingTab />
           </TabsContent>
         </Tabs>
       </CardContent>

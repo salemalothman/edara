@@ -725,5 +725,17 @@
     "pdf": "PDF",
     "pdfDesc": "صيغة المستندات، مثالية للطباعة",
     "download": "تحميل"
+  },
+  "accounting": {
+    "title": "المحاسبة",
+    "paidTenants": "المستأجرون الذين دفعوا",
+    "pendingTenants": "المستأجرون بانتظار الدفع",
+    "allExpenses": "جميع المصروفات",
+    "noPaidTenants": "لا توجد فواتير مدفوعة.",
+    "noPendingTenants": "لا توجد فواتير معلقة.",
+    "noExpenses": "لا توجد مصروفات.",
+    "netTotal": "الصافي الإجمالي",
+    "netTotalDesc": "إجمالي المدفوعات - إجمالي المصروفات",
+    "report": "تقرير المحاسبة"
   }
 }
