@@ -19,7 +19,6 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { Button } from '../../components/ui/Button'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
-import * as FileSystem from 'expo-file-system'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 
@@ -220,9 +219,7 @@ export default function DashboardScreen() {
         </body></html>`
 
       const { uri } = await Print.printToFileAsync({ html })
-      const pdfPath = `${FileSystem.documentDirectory}accounting-report.pdf`
-      await FileSystem.moveAsync({ from: uri, to: pdfPath })
-      await Sharing.shareAsync(pdfPath, { mimeType: 'application/pdf', dialogTitle: t('accounting.report') })
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: t('accounting.report') })
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message || 'Failed to generate report')
     }
