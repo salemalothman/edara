@@ -36,8 +36,7 @@
     "scheme": "edara",
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "expo-localization"
+      "expo-secure-store"
     ]
   }
 }
