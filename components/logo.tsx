@@ -34,19 +34,50 @@ export function Logo({ className, size = "md", variant = "full" }: LogoProps) {
 
   return (
     <div className={cn("flex items-center gap-2 rtl:flex-row-reverse", sizes[size].container, className)}>
-      {/* Logo Icon */}
+      {/* Sailboat Logo Icon */}
       <div className={cn("relative", sizes[size].icon)}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
-          {/* Base shape */}
-          <rect x="4" y="12" width="32" height="24" rx="2" fill="#E2E8F0" />
-
-          {/* Building elements */}
-          <rect x="8" y="16" width="8" height="8" rx="1" fill="#64748B" />
-          <rect x="8" y="26" width="8" height="6" rx="1" fill="#64748B" />
-          <rect x="20" y="16" width="12" height="16" rx="1" fill="#3B82F6" />
-
-          {/* Roof/top element */}
-          <path d="M4 10C4 8.89543 4.89543 8 6 8H34C35.1046 8 36 8.89543 36 10V12H4V10Z" fill="#3B82F6" />
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
+          {/* Main sail */}
+          <path
+            d="M52 8C52 8 78 45 78 70C78 70 52 62 52 62V8Z"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            className="text-primary"
+          />
+          {/* Jib sail */}
+          <path
+            d="M48 18C48 18 30 50 28 70C28 70 48 62 48 62V18Z"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            className="text-primary"
+          />
+          {/* Hull */}
+          <path
+            d="M38 72C38 72 42 82 50 82C58 82 62 72 62 72"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            className="text-primary"
+          />
+          {/* Waterline */}
+          <line
+            x1="30"
+            y1="86"
+            x2="74"
+            y2="86"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            className="text-primary"
+          />
         </svg>
       </div>
 

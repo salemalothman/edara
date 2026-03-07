@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/auth-context'
 import { useTheme } from '../../contexts/theme-context'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
+import { Logo } from '../../components/ui/Logo'
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState('')
@@ -35,7 +36,7 @@ export default function SignupScreen() {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
         <View style={styles.successContainer}>
-          <Text style={[styles.logo, { color: colors.primary }]}>Edara</Text>
+          <Logo size="lg" />
           <Text style={[styles.successTitle, { color: colors.text }]}>Account Created!</Text>
           <Text style={[styles.successText, { color: colors.textSecondary }]}>
             Check your email for a confirmation link, then sign in.
@@ -51,7 +52,7 @@ export default function SignupScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={[styles.logo, { color: colors.primary }]}>Edara</Text>
+            <Logo size="lg" />
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Create your account</Text>
           </View>
 
@@ -80,7 +81,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { padding: 24, justifyContent: 'center', flexGrow: 1 },
   header: { alignItems: 'center', marginBottom: 40 },
-  logo: { fontSize: 36, fontWeight: '800' },
   subtitle: { fontSize: 16, marginTop: 4 },
   error: { fontSize: 14, marginBottom: 16, textAlign: 'center' },
   loginLink: { marginTop: 24, alignItems: 'center' },

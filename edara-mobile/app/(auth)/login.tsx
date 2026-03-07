@@ -7,6 +7,7 @@ import { useLanguage } from '../../contexts/language-context'
 import { useTheme } from '../../contexts/theme-context'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
+import { Logo } from '../../components/ui/Logo'
 
 export default function LoginScreen() {
   const [mode, setMode] = useState<'email' | 'phone'>('email')
@@ -56,7 +57,7 @@ export default function LoginScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={[styles.logo, { color: colors.primary }]}>Edara</Text>
+            <Logo size="lg" />
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Property Management
             </Text>
@@ -146,7 +147,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { padding: 24, justifyContent: 'center', flexGrow: 1 },
   header: { alignItems: 'center', marginBottom: 40 },
-  logo: { fontSize: 36, fontWeight: '800' },
   subtitle: { fontSize: 16, marginTop: 4 },
   tabRow: { flexDirection: 'row', marginBottom: 24 },
   tab: { flex: 1, alignItems: 'center', paddingBottom: 12 },
