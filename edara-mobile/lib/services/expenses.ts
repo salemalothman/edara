@@ -28,28 +28,6 @@ export async function insertExpense(expense: {
   return data
 }
 
-export async function updateExpense(id: string, updates: {
-  description?: string
-  amount?: number
-  category?: string
-  property_id?: string | null
-  date?: string
-}) {
-  const { data, error } = await supabase
-    .from('expenses')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
-export async function deleteExpense(id: string) {
-  const { error } = await supabase.from('expenses').delete().eq('id', id)
-  if (error) throw error
-}
-
 export async function fetchApprovedMaintenanceCosts() {
   const { data, error } = await supabase
     .from('maintenance_requests')
