@@ -26,6 +26,8 @@
     "back": "السابق",
     "remove": "إزالة",
     "all": "الكل",
+    "allProperties": "جميع العقارات",
+    "filterByProperty": "تصفية حسب العقار",
     "error": "خطأ",
     "success": "نجاح",
     "signOut": "تسجيل الخروج",
@@ -56,7 +58,8 @@
     "reports": "التقارير",
     "properties": "العقارات",
     "expenses": "المصروفات",
-    "financing": "التمويل"
+    "financing": "التمويل",
+    "accounts": "الحسابات"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -121,6 +124,7 @@
     "residential": "سكني",
     "commercial": "تجاري",
     "mixedUse": "متعدد الاستخدامات",
+    "investment": "استثماري",
     "vacantUnits": "الوحدات الشاغرة",
     "searchProperties": "البحث في العقارات...",
     "manageProperties": "إدارة العقارات والوحدات الخاصة بك",
@@ -637,16 +641,29 @@
   },
   "accounting": {
     "title": "المحاسبة",
+    "accounts": "الحسابات",
+    "accountsDescription": "نظرة عامة تفصيلية على الحسابات المالية",
     "paidTenants": "المستأجرون الذين دفعوا",
     "pendingTenants": "المستأجرون بانتظار الدفع",
     "allExpenses": "جميع المصروفات",
+    "totalPaid": "إجمالي المدفوعات",
+    "totalPending": "إجمالي المعلق",
+    "totalExpenses": "إجمالي المصروفات",
     "noPaidTenants": "لا توجد فواتير مدفوعة.",
     "noPendingTenants": "لا توجد فواتير معلقة.",
     "noExpenses": "لا توجد مصروفات.",
     "netTotal": "الصافي الإجمالي",
     "netTotalDesc": "إجمالي المدفوعات - إجمالي المصروفات",
     "report": "تقرير المحاسبة",
-    "generateReport": "إنشاء تقرير"
+    "generateReport": "إنشاء تقرير",
+    "filterByMonth": "الشهر",
+    "filterByYear": "السنة",
+    "allMonths": "جميع الأشهر",
+    "allYears": "جميع السنوات",
+    "periodLocked": "الفترة مغلقة",
+    "periodLockedDesc": "فترة المحاسبة هذه مغلقة. السجلات للقراءة فقط.",
+    "currentPeriod": "الفترة الحالية",
+    "lockedPeriod": "مغلقة"
   },
   "validation": {
     "error": "خطأ في التحقق",

@@ -10,7 +10,7 @@ create extension if not exists "uuid-ossp";
 create table properties (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
-  type text not null check (type in ('residential', 'commercial', 'mixed')),
+  type text not null check (type in ('residential', 'commercial', 'mixed', 'investment')),
   address text not null,
   city text not null,
   state text not null,

@@ -1,4 +1,5 @@
 "use client"
+import { Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,7 +13,6 @@ import { useLanguage } from "@/contexts/language-context"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { FinancialOverview } from "@/components/financial-metrics/financial-overview"
-import { DashboardHeader } from "@/components/dashboard-header"
 import { InteractiveButton } from "@/components/ui/interactive-button"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchUnits } from "@/lib/services/units"
@@ -189,19 +189,31 @@ export default function DashboardPage() {
   return (
     <>
       <ExportFormatDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onSelect={handleExportFormat} />
-      <div className="flex min-h-screen flex-col">
-        <DashboardHeader
-          showDatePicker={true}
-          showExport={true}
-          showAddButton={false}
-          onExport={handleExportClick}
-          selectedPeriod={selectedPeriod}
-          onPeriodChange={setSelectedPeriod}
-        />
-
-        <div className="flex-1 space-y-4 p-8 pt-6">
-          <div className="flex items-center justify-between space-y-2">
+      <div className="flex-1 space-y-4 p-8 pt-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h2>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                {[
+                  { key: "1m", label: t("dashboard.period1m") },
+                  { key: "3m", label: t("dashboard.period3m") },
+                  { key: "6m", label: t("dashboard.period6m") },
+                ].map((period) => (
+                  <Button
+                    key={period.key}
+                    size="sm"
+                    variant={selectedPeriod === period.key ? "default" : "outline"}
+                    onClick={() => setSelectedPeriod(period.key)}
+                  >
+                    {period.label}
+                  </Button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleExportClick}>
+                <Download className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
+                {t("common.export")}
+              </Button>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -284,7 +296,6 @@ export default function DashboardPage() {
               <NotificationsTab />
             </TabsContent>
           </Tabs>
-        </div>
       </div>
     </>
   )

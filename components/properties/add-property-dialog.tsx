@@ -212,6 +212,7 @@ export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}
                     <SelectItem value="residential">{t("properties.residential")}</SelectItem>
                     <SelectItem value="commercial">{t("properties.commercial")}</SelectItem>
                     <SelectItem value="mixed">{t("properties.mixedUse")}</SelectItem>
+                    <SelectItem value="investment">{t("properties.investment")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

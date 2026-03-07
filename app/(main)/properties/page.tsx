@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { LanguageProvider } from "@/contexts/language-context"
 import PropertiesContent from "./properties-content"
 
 export const metadata: Metadata = {
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function PropertiesPage() {
-  return (
-    <LanguageProvider>
-      <PropertiesContent />
-    </LanguageProvider>
-  )
+  return <PropertiesContent />
 }

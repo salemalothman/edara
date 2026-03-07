@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { isDateInLockedPeriod } from '@/utils/period-lock'
 
 export async function fetchExpenses() {
   const { data, error } = await supabase
@@ -19,6 +20,9 @@ export async function insertExpense(expense: {
   property_id?: string | null
   date?: string
 }) {
+  if (isDateInLockedPeriod(expense.date)) {
+    throw new Error('Cannot add expenses to a locked accounting period.')
+  }
   const { data, error } = await supabase
     .from('expenses')
     .insert(expense)
@@ -35,6 +39,15 @@ export async function updateExpense(id: string, updates: {
   property_id?: string | null
   date?: string
 }) {
+  const { data: existing } = await supabase
+    .from('expenses')
+    .select('date, created_at')
+    .eq('id', id)
+    .single()
+  if (existing && isDateInLockedPeriod(existing.date || existing.created_at)) {
+    throw new Error('Cannot modify expenses in a locked accounting period.')
+  }
+
   const { data, error } = await supabase
     .from('expenses')
     .update(updates)
@@ -46,6 +59,15 @@ export async function updateExpense(id: string, updates: {
 }
 
 export async function deleteExpense(id: string) {
+  const { data: existing } = await supabase
+    .from('expenses')
+    .select('date, created_at')
+    .eq('id', id)
+    .single()
+  if (existing && isDateInLockedPeriod(existing.date || existing.created_at)) {
+    throw new Error('Cannot delete expenses in a locked accounting period.')
+  }
+
   const { error } = await supabase.from('expenses').delete().eq('id', id)
   if (error) throw error
 }
@@ -54,7 +76,7 @@ export async function fetchApprovedMaintenanceCosts() {
   const { data, error } = await supabase
     .from('maintenance_requests')
     .select(`
-      id, title, category, cost, status, created_at,
+      id, title, category, cost, status, created_at, property_id,
       property:properties(name),
       unit:units(name)
     `)

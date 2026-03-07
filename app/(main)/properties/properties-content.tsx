@@ -41,7 +41,7 @@ export default function PropertiesContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
   const [filters, setFilters] = useState<PropertyFilterState>({
-    types: { residential: true, commercial: true, mixed: true },
+    types: { residential: true, commercial: true, mixed: true, investment: true },
   })
   const { data: properties, loading, refetch } = useSupabaseQuery(fetchProperties)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
@@ -57,12 +57,14 @@ export default function PropertiesContent() {
     // Tab filter
     if (activeTab === "residential" && property.type !== "residential") return false
     if (activeTab === "commercial" && property.type !== "commercial") return false
+    if (activeTab === "investment" && property.type !== "investment") return false
 
     // Dropdown type filters (only apply on "all" tab)
     if (activeTab === "all") {
       if (property.type === "residential" && !filters.types.residential) return false
       if (property.type === "commercial" && !filters.types.commercial) return false
       if (property.type === "mixed" && !filters.types.mixed) return false
+      if (property.type === "investment" && !filters.types.investment) return false
     }
 
     // Search filter
@@ -226,7 +228,7 @@ export default function PropertiesContent() {
                   <TableCell>{`${property.address}, ${property.city}, ${property.state}`}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {property.type === "residential" ? t("properties.residential") : property.type === "commercial" ? t("properties.commercial") : t("properties.mixedUse")}
+                      {property.type === "residential" ? t("properties.residential") : property.type === "commercial" ? t("properties.commercial") : property.type === "investment" ? t("properties.investment") : t("properties.mixedUse")}
                     </Badge>
                   </TableCell>
                   <TableCell>{formatNumberWithUnit(property.units, "units")}</TableCell>
@@ -334,6 +336,7 @@ export default function PropertiesContent() {
             <TabsTrigger value="all">{t("properties.allProperties")}</TabsTrigger>
             <TabsTrigger value="residential">{t("properties.residential")}</TabsTrigger>
             <TabsTrigger value="commercial">{t("properties.commercial")}</TabsTrigger>
+            <TabsTrigger value="investment">{t("properties.investment")}</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
             <PropertyFilters filters={filters} onFiltersChange={setFilters} />

@@ -30,7 +30,7 @@ export default function PropertiesListScreen() {
     return matchesSearch && matchesFilter
   })
 
-  const filters = ['all', 'residential', 'commercial', 'mixed']
+  const filters = ['all', 'residential', 'commercial', 'mixed', 'investment']
 
   const renderItem = useCallback(({ item }: { item: any }) => (
     <TouchableOpacity onPress={() => router.push(`/(tabs)/properties/${item.id}`)}>
@@ -45,7 +45,7 @@ export default function PropertiesListScreen() {
             <Text style={[styles.address, { color: colors.textSecondary }]}>{item.address}, {item.city}</Text>
           </View>
           <View style={styles.metaRow}>
-            <Badge label={item.type} />
+            <Badge label={t(`properties.${item.type}`) !== `properties.${item.type}` ? t(`properties.${item.type}`) : item.type} />
             <Text style={[styles.units, { color: colors.textSecondary }]}>{item.units} units</Text>
           </View>
         </View>

@@ -26,6 +26,8 @@
     "back": "Back",
     "remove": "Remove",
     "all": "All",
+    "allProperties": "All Properties",
+    "filterByProperty": "Filter by Property",
     "error": "Error",
     "success": "Success",
     "signOut": "Sign Out",
@@ -56,7 +58,8 @@
     "reports": "Reports",
     "properties": "Properties",
     "expenses": "Expenses",
-    "financing": "Financing"
+    "financing": "Financing",
+    "accounts": "Accounts"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -121,6 +124,7 @@
     "residential": "Residential",
     "commercial": "Commercial",
     "mixedUse": "Mixed-Use",
+    "investment": "Investment",
     "vacantUnits": "Vacant Units",
     "searchProperties": "Search properties...",
     "manageProperties": "Manage your properties and units",
@@ -637,16 +641,29 @@
   },
   "accounting": {
     "title": "Accounting",
+    "accounts": "Accounts",
+    "accountsDescription": "Detailed financial accounts overview",
     "paidTenants": "Paid Tenants",
     "pendingTenants": "Pending Tenants",
     "allExpenses": "All Expenses",
+    "totalPaid": "Total Paid",
+    "totalPending": "Total Pending",
+    "totalExpenses": "Total Expenses",
     "noPaidTenants": "No paid invoices found.",
     "noPendingTenants": "No pending invoices found.",
     "noExpenses": "No expenses found.",
     "netTotal": "Net Total",
     "netTotalDesc": "Total Paid - Total Expenses",
     "report": "Accounting Report",
-    "generateReport": "Generate Report"
+    "generateReport": "Generate Report",
+    "filterByMonth": "Month",
+    "filterByYear": "Year",
+    "allMonths": "All Months",
+    "allYears": "All Years",
+    "periodLocked": "Period Locked",
+    "periodLockedDesc": "This accounting period is closed. Records are read-only.",
+    "currentPeriod": "Current Period",
+    "lockedPeriod": "Locked"
   },
   "validation": {
     "error": "Validation Error",

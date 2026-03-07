@@ -106,7 +106,7 @@ export default function AddPropertyScreen() {
 
         <Text style={[styles.label, { color: colors.text }]}>{t('properties.propertyType')}</Text>
         <View style={styles.typeRow}>
-          {['residential', 'commercial', 'mixed'].map((t_) => (
+          {['residential', 'commercial', 'mixed', 'investment'].map((t_) => (
             <Button
               key={t_}
               title={t(`properties.${t_}`)}

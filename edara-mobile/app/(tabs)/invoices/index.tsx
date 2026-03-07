@@ -1,12 +1,13 @@
-import { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native'
+import { useState, useCallback, useMemo } from 'react'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ScrollView } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Plus, Download } from 'lucide-react-native'
+import { Plus, Download, Building2 } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
 import { fetchInvoices } from '../../../lib/services/invoices'
+import { fetchProperties } from '../../../lib/services/properties'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { SearchBar } from '../../../components/ui/SearchBar'
@@ -17,6 +18,8 @@ import { ExportSheet } from '../../../components/ui/ExportSheet'
 export default function InvoicesListScreen() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [propertyFilter, setPropertyFilter] = useState('all')
+  const [showPropertyPicker, setShowPropertyPicker] = useState(false)
   const [exportVisible, setExportVisible] = useState(false)
   const { t } = useLanguage()
   const { colors } = useTheme()
@@ -24,19 +27,30 @@ export default function InvoicesListScreen() {
   const router = useRouter()
 
   const { data: invoices, loading, refetch } = useSupabaseQuery(fetchInvoices)
+  const { data: properties } = useSupabaseQuery(fetchProperties)
 
   useFocusEffect(useCallback(() => { refetch() }, []))
 
-  // Summary stats
-  const totalDue = invoices.filter((i: any) => i.status === 'pending').reduce((s: number, i: any) => s + i.amount, 0)
-  const totalOverdue = invoices.filter((i: any) => i.status === 'overdue').reduce((s: number, i: any) => s + i.amount, 0)
-  const totalPaid = invoices.filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + i.amount, 0)
+  // Filter by property first
+  const propertyFiltered = useMemo(() => {
+    if (propertyFilter === 'all') return invoices
+    return invoices.filter((inv: any) => inv.property_id === propertyFilter)
+  }, [invoices, propertyFilter])
 
-  const filtered = invoices.filter((inv: any) => {
+  // Summary stats (based on property-filtered data)
+  const totalDue = propertyFiltered.filter((i: any) => i.status === 'pending').reduce((s: number, i: any) => s + i.amount, 0)
+  const totalOverdue = propertyFiltered.filter((i: any) => i.status === 'overdue').reduce((s: number, i: any) => s + i.amount, 0)
+  const totalPaid = propertyFiltered.filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + i.amount, 0)
+
+  const filtered = propertyFiltered.filter((inv: any) => {
     const matchesSearch = inv.invoice_number.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || inv.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  const selectedPropertyName = propertyFilter === 'all'
+    ? t('common.allProperties')
+    : (properties as any[]).find((p) => p.id === propertyFilter)?.name || t('common.allProperties')
 
   const statusFilters = ['all', 'pending', 'paid', 'overdue']
 
@@ -84,6 +98,49 @@ export default function InvoicesListScreen() {
           <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(totalPaid)}</Text>
         </Card>
       </View>
+
+      {/* Property Filter */}
+      <View style={[styles.propertyFilterRow, { zIndex: 10 }]}>
+        <Building2 size={16} color={colors.textSecondary} />
+        <TouchableOpacity
+          style={[styles.propertyFilterBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setShowPropertyPicker(!showPropertyPicker)}
+        >
+          <Text style={[styles.propertyFilterText, { color: colors.text }]} numberOfLines={1}>
+            {selectedPropertyName}
+          </Text>
+        </TouchableOpacity>
+        {propertyFilter !== 'all' && (
+          <TouchableOpacity onPress={() => setPropertyFilter('all')}>
+            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '500' }}>{t('common.all')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      {showPropertyPicker && (
+        <View style={[styles.propertyDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+            <TouchableOpacity
+              style={[styles.propertyDropdownItem, propertyFilter === 'all' && { backgroundColor: colors.primary + '15' }]}
+              onPress={() => { setPropertyFilter('all'); setShowPropertyPicker(false) }}
+            >
+              <Text style={{ color: propertyFilter === 'all' ? colors.primary : colors.text, fontSize: 14 }}>
+                {t('common.allProperties')}
+              </Text>
+            </TouchableOpacity>
+            {properties.map((p: any) => (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.propertyDropdownItem, propertyFilter === p.id && { backgroundColor: colors.primary + '15' }]}
+                onPress={() => { setPropertyFilter(p.id); setShowPropertyPicker(false) }}
+              >
+                <Text style={{ color: propertyFilter === p.id ? colors.primary : colors.text, fontSize: 14 }}>
+                  {p.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={styles.filterArea}>
         <View style={styles.searchRow}>
@@ -155,6 +212,11 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1, paddingVertical: 12, paddingHorizontal: 10 },
   summaryLabel: { fontSize: 11, fontWeight: '500' },
   summaryValue: { fontSize: 14, fontWeight: '700', marginTop: 4 },
+  propertyFilterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 10 },
+  propertyFilterBtn: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  propertyFilterText: { fontSize: 14, fontWeight: '500' },
+  propertyDropdown: { marginHorizontal: 16, borderRadius: 8, borderWidth: 1, marginTop: 4, zIndex: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
+  propertyDropdownItem: { paddingHorizontal: 12, paddingVertical: 10 },
   filterArea: { paddingHorizontal: 16, paddingTop: 12 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   exportBtn: { padding: 10, borderWidth: 1, borderRadius: 10 },

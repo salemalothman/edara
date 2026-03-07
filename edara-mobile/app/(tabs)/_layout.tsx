@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { Home, Building2, Users, FileText, Receipt, Wrench, DollarSign } from 'lucide-react-native'
+import { Home, Building2, Users, FileText, Receipt, Wrench, DollarSign, Calculator } from 'lucide-react-native'
 import { useLanguage } from '../../contexts/language-context'
 import { useTheme } from '../../contexts/theme-context'
 
@@ -73,6 +73,14 @@ export default function TabLayout() {
         options={{
           title: t('navigation.financing'),
           tabBarIcon: ({ color, size }) => <DollarSign size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="accounts"
+        options={{
+          title: t('navigation.accounts'),
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Calculator size={size} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
-import { Download, MoreHorizontal, CalendarRange, DollarSign, CheckCircle2, Clock, AlertTriangle } from "lucide-react"
+import { Download, MoreHorizontal, CalendarRange, DollarSign, CheckCircle2, Clock, AlertTriangle, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -27,6 +27,7 @@ import { ExportFormatDialog } from "@/components/ui/export-format-dialog"
 import { downloadExport, type ExportFormat } from "@/utils/export"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 import { fetchInvoices, updateInvoice, deleteInvoice, generateMonthlyInvoices } from "@/lib/services/invoices"
+import { fetchProperties } from "@/lib/services/properties"
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -35,9 +36,11 @@ export default function InvoicesContent() {
   const { formatCurrency, formatDate } = useFormatter()
   const { toast } = useToast()
   const { data: invoices, loading, error, refetch } = useSupabaseQuery(fetchInvoices)
+  const { data: properties } = useSupabaseQuery(fetchProperties)
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [monthFilter, setMonthFilter] = useState("all")
+  const [propertyFilter, setPropertyFilter] = useState("all")
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const hasGenerated = useRef(false)
 
@@ -91,13 +94,18 @@ export default function InvoicesContent() {
     }
   }
 
-  // Filter pipeline: month → tab → search
+  // Filter pipeline: month → property → tab → search
   const monthFiltered = useMemo(() => {
     if (monthFilter === "all") return invoices
     return invoices.filter((inv: any) => inv.issue_date?.startsWith(monthFilter))
   }, [invoices, monthFilter])
 
-  const tabFiltered = monthFiltered.filter((inv: any) => {
+  const propertyFiltered = useMemo(() => {
+    if (propertyFilter === "all") return monthFiltered
+    return monthFiltered.filter((inv: any) => inv.property_id === propertyFilter)
+  }, [monthFiltered, propertyFilter])
+
+  const tabFiltered = propertyFiltered.filter((inv: any) => {
     if (activeTab === "all") return true
     return inv.status === activeTab
   })
@@ -115,9 +123,9 @@ export default function InvoicesContent() {
     )
   })
 
-  // Monthly summary stats (based on month filter, before tab/search)
+  // Monthly summary stats (based on month + property filter, before tab/search)
   const monthlySummary = useMemo(() => {
-    const data = monthFilter === "all" ? invoices : monthFiltered
+    const data = monthFilter === "all" && propertyFilter === "all" ? invoices : propertyFiltered
     let paid = 0, pending = 0, overdue = 0, paidCount = 0, total = 0
     for (const inv of data as any[]) {
       const amount = Number(inv.amount) || 0
@@ -127,7 +135,7 @@ export default function InvoicesContent() {
       else { pending += amount }
     }
     return { paid, pending, overdue, paidCount, total }
-  }, [invoices, monthFiltered, monthFilter])
+  }, [invoices, propertyFiltered, monthFilter, propertyFilter])
 
   const handleExportFormat = (format: ExportFormat) => {
     const headers = [t("invoices.invoiceNumber"), t("invoices.tenant"), t("dashboard.propertyUnit"), t("invoices.issueDate"), t("invoices.dueDate"), t("invoices.amount"), t("common.status")]
@@ -315,8 +323,20 @@ export default function InvoicesContent() {
             ))}
           </SelectContent>
         </Select>
-        {monthFilter !== "all" && (
-          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setMonthFilter("all")}>
+        <Building2 className="h-4 w-4 text-muted-foreground" />
+        <Select value={propertyFilter} onValueChange={setPropertyFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={t("common.filterByProperty")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("common.allProperties")}</SelectItem>
+            {properties.map((p: any) => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {(monthFilter !== "all" || propertyFilter !== "all") && (
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => { setMonthFilter("all"); setPropertyFilter("all") }}>
             {t("invoices.clear")}
           </Button>
         )}

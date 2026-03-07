@@ -17,6 +17,7 @@ export interface PropertyFilterState {
     residential: boolean
     commercial: boolean
     mixed: boolean
+    investment: boolean
   }
 }
 
@@ -69,6 +70,12 @@ export function PropertyFilters({ filters, onFiltersChange }: PropertyFiltersPro
           onCheckedChange={() => toggleType("mixed")}
         >
           {t("properties.mixedUse")}
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={filters.types.investment}
+          onCheckedChange={() => toggleType("investment")}
+        >
+          {t("properties.investment")}
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

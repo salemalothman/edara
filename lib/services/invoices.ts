@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { isDateInLockedPeriod } from '@/utils/period-lock'
 
 export async function fetchInvoices() {
   const { data, error } = await supabase
@@ -37,6 +38,9 @@ export async function insertInvoice(invoice: {
   file_url?: string | null
   items: { description: string; amount: number; sort_order: number }[]
 }) {
+  if (isDateInLockedPeriod(invoice.issue_date)) {
+    throw new Error('Cannot add invoices to a locked accounting period.')
+  }
   const { items, ...invoiceData } = invoice
 
   // Insert invoice
@@ -67,6 +71,16 @@ export async function updateInvoice(id: string, updates: {
   amount?: number
   description?: string | null
 }) {
+  // Fetch the invoice to check its period
+  const { data: existing } = await supabase
+    .from('invoices')
+    .select('issue_date')
+    .eq('id', id)
+    .single()
+  if (existing && isDateInLockedPeriod(existing.issue_date)) {
+    throw new Error('Cannot modify invoices in a locked accounting period.')
+  }
+
   const { data, error } = await supabase
     .from('invoices')
     .update(updates)
@@ -78,6 +92,16 @@ export async function updateInvoice(id: string, updates: {
 }
 
 export async function deleteInvoice(id: string) {
+  // Check if invoice is in a locked period
+  const { data: existing } = await supabase
+    .from('invoices')
+    .select('issue_date')
+    .eq('id', id)
+    .single()
+  if (existing && isDateInLockedPeriod(existing.issue_date)) {
+    throw new Error('Cannot delete invoices in a locked accounting period.')
+  }
+
   // Delete line items first
   await supabase.from('invoice_items').delete().eq('invoice_id', id)
   const { error } = await supabase.from('invoices').delete().eq('id', id)

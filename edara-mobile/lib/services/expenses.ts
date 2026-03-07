@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import { isDateInLockedPeriod } from '../../utils/period-lock'
 
 export async function fetchExpenses() {
   const { data, error } = await supabase
@@ -19,6 +20,9 @@ export async function insertExpense(expense: {
   property_id?: string | null
   date?: string
 }) {
+  if (isDateInLockedPeriod(expense.date)) {
+    throw new Error('Cannot add expenses to a locked accounting period.')
+  }
   const { data, error } = await supabase
     .from('expenses')
     .insert(expense)
@@ -32,7 +36,7 @@ export async function fetchApprovedMaintenanceCosts() {
   const { data, error } = await supabase
     .from('maintenance_requests')
     .select(`
-      id, title, category, cost, status, created_at,
+      id, title, category, cost, status, created_at, property_id,
       property:properties(name),
       unit:units(name)
     `)

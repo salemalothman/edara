@@ -19,6 +19,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
     { href: "/expenses", label: t("navigation.expenses") },
     { href: "/financing", label: t("navigation.financing") },
     { href: "/maintenance", label: t("navigation.maintenance") },
+    { href: "/accounts", label: t("accounting.accounts") },
   ]
 
   return (
