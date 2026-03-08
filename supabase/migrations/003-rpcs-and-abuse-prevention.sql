@@ -8,6 +8,8 @@
 -- Consumer: contexts/organization-context.tsx
 -- ============================================
 
+DROP FUNCTION IF EXISTS get_my_membership();
+
 CREATE OR REPLACE FUNCTION get_my_membership()
 RETURNS TABLE(org_id uuid, org_name text, org_slug text, role text) AS $$
   SELECT
@@ -26,6 +28,8 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 -- Returns members of a given org with their email
 -- Consumer: app/(main)/settings/settings-content.tsx
 -- ============================================
+
+DROP FUNCTION IF EXISTS get_org_members_with_email(uuid);
 
 CREATE OR REPLACE FUNCTION get_org_members_with_email(org_id uuid)
 RETURNS TABLE(id uuid, user_id uuid, role text, created_at timestamptz, user_email text) AS $$
