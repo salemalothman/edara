@@ -48,7 +48,7 @@ type Invitation = {
 
 export function SettingsContent() {
   const { t } = useLanguage()
-  const { organization, orgId, isAdmin } = useOrganization()
+  const { organization, orgId, isAdmin, refetchOrg } = useOrganization()
   const { canEdit } = usePermissions()
   const [members, setMembers] = useState<Member[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
@@ -65,7 +65,6 @@ export function SettingsContent() {
       return
     }
 
-    // Try RPC first (returns emails + names), fall back to direct table query
     let membersData: Member[] = []
     const rpcRes = await supabase.rpc("get_org_members_with_email", { org_id: orgId })
     if (rpcRes.data && !rpcRes.error) {
@@ -97,8 +96,15 @@ export function SettingsContent() {
     setLoading(false)
   }
 
+  // Refresh org context + members on mount
   useEffect(() => {
-    fetchData()
+    refetchOrg()
+  }, [])
+
+  useEffect(() => {
+    if (orgId) {
+      fetchData()
+    }
   }, [orgId])
 
   const handleInvite = async () => {

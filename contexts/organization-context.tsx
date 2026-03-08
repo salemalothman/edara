@@ -63,9 +63,17 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }, [user, session, pathname, router])
 
+  // Refetch on auth changes
   useEffect(() => {
     fetchMembership()
   }, [user, session])
+
+  // Refetch when navigating to a protected page (ensures fresh org data)
+  useEffect(() => {
+    if (user && session && !PUBLIC_PATHS.includes(pathname)) {
+      fetchMembership()
+    }
+  }, [pathname])
 
   const refetchOrg = useCallback(async () => {
     await fetchMembership()
