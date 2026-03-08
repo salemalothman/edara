@@ -103,20 +103,36 @@ export function SettingsContent() {
     if (!orgId || !inviteEmail) return
     setInviting(true)
 
-    const { error } = await supabase.from("invitations").insert({
+    const { data, error } = await supabase.from("invitations").insert({
       organization_id: orgId,
       email: inviteEmail,
       role: inviteRole,
-    })
+    }).select("token").single()
 
     if (error) {
       alert(error.message)
-    } else {
-      setInviteEmail("")
-      setInviteRole("viewer")
-      setInviteDialogOpen(false)
-      fetchData()
+      setInviting(false)
+      return
     }
+
+    // Send invitation email via Edge Function (best-effort, don't block on failure)
+    if (data?.token) {
+      supabase.functions.invoke("send-invite-email", {
+        body: {
+          email: inviteEmail,
+          token: data.token,
+          orgName: organization?.name || "",
+          role: inviteRole,
+        },
+      }).catch(() => {
+        // Edge function may not be deployed yet — invitation still works via token copy
+      })
+    }
+
+    setInviteEmail("")
+    setInviteRole("viewer")
+    setInviteDialogOpen(false)
+    fetchData()
     setInviting(false)
   }
 
