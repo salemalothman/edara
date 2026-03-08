@@ -13,8 +13,6 @@
     "checkEmail": "Check your email for a confirmation link, then sign in.",
     "noAccount": "Don't have an account?",
     "haveAccount": "Already have an account?",
-    "step": "Step",
-    "of": "of",
     "createAccount": "Create Account",
     "createAccountDesc": "Enter your details to get started",
     "setupWorkspace": "Set Up Workspace",
@@ -803,9 +801,7 @@
     "propertyManagerHint": "This will be your company name visible to your team",
     "inviteCode": "Invitation Code",
     "inviteCodePlaceholder": "Enter the code from your invitation",
-    "haveInviteCode": "I have an invitation code",
-    "enterCompanyName": "Enter your company or property management name",
-    "orJoinTeam": "Or join an existing team"
+    "haveInviteCode": "I have an invitation code"
   },
   "permissions": {
     "viewOnly": "View-only access",

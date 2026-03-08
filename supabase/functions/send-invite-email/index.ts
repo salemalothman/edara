@@ -1,7 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 const SITE_URL = Deno.env.get("SITE_URL") || "http://localhost:3000"
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
 
 interface InvitePayload {
   email: string
@@ -29,6 +41,27 @@ serve(async (req: Request) => {
     })
   }
 
+  // Verify the caller is authenticated
+  const authHeader = req.headers.get("Authorization")
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "Missing authorization header" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    )
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  })
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    )
+  }
+
   if (!RESEND_API_KEY) {
     return new Response(
       JSON.stringify({ error: "RESEND_API_KEY not configured" }),
@@ -45,8 +78,9 @@ serve(async (req: Request) => {
     )
   }
 
-  const inviteUrl = `${SITE_URL}/signup?invite=${token}`
+  const inviteUrl = `${SITE_URL}/signup?invite=${encodeURIComponent(token)}`
   const roleLabel = role === "admin" ? "Manager" : "Viewer"
+  const safeOrgName = escapeHtml(orgName)
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -57,12 +91,12 @@ serve(async (req: Request) => {
     body: JSON.stringify({
       from: "Edara <onboarding@resend.dev>",
       to: [email],
-      subject: `You're invited to join ${orgName} on Edara`,
+      subject: `You're invited to join ${safeOrgName} on Edara`,
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 0;">
           <h2 style="color: #111; margin-bottom: 16px;">You've been invited!</h2>
           <p style="color: #555; line-height: 1.6;">
-            You've been invited to join <strong>${orgName}</strong> as a <strong>${roleLabel}</strong> on Edara —
+            You've been invited to join <strong>${safeOrgName}</strong> as a <strong>${roleLabel}</strong> on Edara —
             a property management platform.
           </p>
           <p style="margin: 24px 0;">

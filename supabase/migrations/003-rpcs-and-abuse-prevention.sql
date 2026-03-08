@@ -91,6 +91,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS trg_set_invited_by ON invitations;
+
 CREATE TRIGGER trg_set_invited_by
   BEFORE INSERT ON invitations
   FOR EACH ROW

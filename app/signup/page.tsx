@@ -22,8 +22,8 @@ export default function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Step management: 1 = account creation, 2 = org setup
-  const [step, setStep] = useState(1)
+  // Step management: 1 = account creation, "confirm" = email confirmation, 2 = org setup
+  const [step, setStep] = useState<1 | "confirm" | 2>(1)
 
   // Step 1 fields
   const [fullName, setFullName] = useState("")
@@ -71,10 +71,9 @@ export default function SignupPage() {
     // Auto-sign in to continue to step 2
     const signInResult = await supabase.auth.signInWithPassword({ email, password })
     if (signInResult.error) {
-      // If sign-in fails (e.g. email confirmation required), show success message
-      setError("")
+      // Sign-in failed (email confirmation required) — show confirmation screen
       setLoading(false)
-      setStep(2)
+      setStep("confirm")
       return
     }
 
@@ -119,30 +118,43 @@ export default function SignupPage() {
             <Logo size="lg" />
           </div>
 
-          {/* Step indicator */}
-          <div className="flex items-center justify-center gap-2">
-            <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold ${
-              step === 1 ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
-            }`}>
-              {step > 1 ? <CheckCircle className="h-4 w-4" /> : "1"}
+          {/* Step indicator — hidden on confirmation screen */}
+          {step !== "confirm" && (
+            <div className="flex items-center justify-center gap-2">
+              <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold ${
+                step === 1 ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
+              }`}>
+                {step === 2 ? <CheckCircle className="h-4 w-4" /> : "1"}
+              </div>
+              <div className="w-8 h-0.5 bg-border" />
+              <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold ${
+                step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}>
+                2
+              </div>
             </div>
-            <div className="w-8 h-0.5 bg-border" />
-            <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold ${
-              step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            }`}>
-              2
-            </div>
-          </div>
+          )}
 
           <CardTitle className="text-2xl">
-            {step === 1 ? t("auth.createAccount") : t("auth.setupWorkspace")}
+            {step === 1 ? t("auth.createAccount") : step === "confirm" ? t("auth.accountCreated") : t("auth.setupWorkspace")}
           </CardTitle>
           <CardDescription>
-            {step === 1 ? t("auth.createAccountDesc") : t("auth.setupWorkspaceDesc")}
+            {step === 1 ? t("auth.createAccountDesc") : step === "confirm" ? t("auth.checkEmail") : t("auth.setupWorkspaceDesc")}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
+          {step === "confirm" && (
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center">
+                <CheckCircle className="h-12 w-12 text-green-500" />
+              </div>
+              <Link href="/login">
+                <Button className="w-full">{t("auth.signIn")}</Button>
+              </Link>
+            </div>
+          )}
+
           {step === 1 && (
             <form onSubmit={handleAccountCreate} className="space-y-4">
               <div className="space-y-2">

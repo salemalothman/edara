@@ -13,8 +13,6 @@
     "checkEmail": "تحقق من بريدك الإلكتروني للحصول على رابط التأكيد، ثم سجل الدخول.",
     "noAccount": "ليس لديك حساب؟",
     "haveAccount": "لديك حساب بالفعل؟",
-    "step": "خطوة",
-    "of": "من",
     "createAccount": "إنشاء حساب",
     "createAccountDesc": "أدخل بياناتك للبدء",
     "setupWorkspace": "إعداد مساحة العمل",
@@ -804,9 +802,7 @@
     "propertyManagerHint": "سيكون هذا اسم شركتك الظاهر لفريقك",
     "inviteCode": "رمز الدعوة",
     "inviteCodePlaceholder": "أدخل الرمز من دعوتك",
-    "haveInviteCode": "لدي رمز دعوة",
-    "enterCompanyName": "أدخل اسم شركتك أو إدارة العقارات",
-    "orJoinTeam": "أو انضم إلى فريق حالي"
+    "haveInviteCode": "لدي رمز دعوة"
   },
   "permissions": {
     "viewOnly": "صلاحية العرض فقط",
