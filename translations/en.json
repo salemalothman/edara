@@ -12,7 +12,14 @@
     "accountCreated": "Account Created!",
     "checkEmail": "Check your email for a confirmation link, then sign in.",
     "noAccount": "Don't have an account?",
-    "haveAccount": "Already have an account?"
+    "haveAccount": "Already have an account?",
+    "step": "Step",
+    "of": "of",
+    "createAccount": "Create Account",
+    "createAccountDesc": "Enter your details to get started",
+    "setupWorkspace": "Set Up Workspace",
+    "setupWorkspaceDesc": "Create or join a workspace to manage properties",
+    "continueToWorkspace": "Continue"
   },
   "common": {
     "dashboard": "Dashboard",
@@ -780,7 +787,9 @@
     "pendingInvitations": "Pending Invitations",
     "expires": "Expires",
     "copyToken": "Copy invite code",
-    "inviteSent": "Invitation sent"
+    "inviteSent": "Invitation sent",
+    "inviteEmailSent": "Invitation email sent",
+    "inviteEmailFailed": "Failed to send invitation email"
   },
   "onboarding": {
     "title": "Get Started",
@@ -793,7 +802,10 @@
     "orgNamePlaceholder": "e.g. Al Salam Properties",
     "propertyManagerHint": "This will be your company name visible to your team",
     "inviteCode": "Invitation Code",
-    "inviteCodePlaceholder": "Enter the code from your invitation"
+    "inviteCodePlaceholder": "Enter the code from your invitation",
+    "haveInviteCode": "I have an invitation code",
+    "enterCompanyName": "Enter your company or property management name",
+    "orJoinTeam": "Or join an existing team"
   },
   "permissions": {
     "viewOnly": "View-only access",

@@ -12,7 +12,14 @@
     "accountCreated": "تم إنشاء الحساب!",
     "checkEmail": "تحقق من بريدك الإلكتروني للحصول على رابط التأكيد، ثم سجل الدخول.",
     "noAccount": "ليس لديك حساب؟",
-    "haveAccount": "لديك حساب بالفعل؟"
+    "haveAccount": "لديك حساب بالفعل؟",
+    "step": "خطوة",
+    "of": "من",
+    "createAccount": "إنشاء حساب",
+    "createAccountDesc": "أدخل بياناتك للبدء",
+    "setupWorkspace": "إعداد مساحة العمل",
+    "setupWorkspaceDesc": "أنشئ أو انضم إلى مساحة عمل لإدارة العقارات",
+    "continueToWorkspace": "متابعة"
   },
   "common": {
     "dashboard": "لوحة التحكم",
@@ -781,7 +788,9 @@
     "pendingInvitations": "الدعوات المعلقة",
     "expires": "تنتهي",
     "copyToken": "نسخ رمز الدعوة",
-    "inviteSent": "تم إرسال الدعوة"
+    "inviteSent": "تم إرسال الدعوة",
+    "inviteEmailSent": "تم إرسال بريد الدعوة",
+    "inviteEmailFailed": "فشل في إرسال بريد الدعوة"
   },
   "onboarding": {
     "title": "البدء",
@@ -794,7 +803,10 @@
     "orgNamePlaceholder": "مثال: عقارات السلام",
     "propertyManagerHint": "سيكون هذا اسم شركتك الظاهر لفريقك",
     "inviteCode": "رمز الدعوة",
-    "inviteCodePlaceholder": "أدخل الرمز من دعوتك"
+    "inviteCodePlaceholder": "أدخل الرمز من دعوتك",
+    "haveInviteCode": "لدي رمز دعوة",
+    "enterCompanyName": "أدخل اسم شركتك أو إدارة العقارات",
+    "orJoinTeam": "أو انضم إلى فريق حالي"
   },
   "permissions": {
     "viewOnly": "صلاحية العرض فقط",
