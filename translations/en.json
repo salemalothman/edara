@@ -808,6 +808,8 @@
     "managerRequired": "Manager access required"
   },
   "settings": {
-    "manageOrg": "Manage your workspace and team members"
+    "manageOrg": "Manage your workspace and team members",
+    "orgInfoDesc": "Your workspace identity and details",
+    "orgId": "ID"
   }
 }

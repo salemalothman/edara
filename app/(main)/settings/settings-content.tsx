@@ -25,7 +25,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Loader2, UserPlus, Trash2, Shield, Eye, Copy } from "lucide-react"
+import { BackToDashboard } from "@/components/back-to-dashboard"
+import { Loader2, UserPlus, Trash2, Shield, Eye, Copy, Building2 } from "lucide-react"
 
 type Member = {
   id: string
@@ -33,6 +34,7 @@ type Member = {
   role: string
   created_at: string
   user_email?: string
+  user_full_name?: string
 }
 
 type Invitation = {
@@ -63,13 +65,13 @@ export function SettingsContent() {
       return
     }
 
-    // Try RPC first (returns emails), fall back to direct table query
+    // Try RPC first (returns emails + names), fall back to direct table query
     let membersData: Member[] = []
     const rpcRes = await supabase.rpc("get_org_members_with_email", { org_id: orgId })
     if (rpcRes.data && !rpcRes.error) {
       membersData = rpcRes.data as Member[]
     } else {
-      // Fallback: query table directly (no emails)
+      // Fallback: query table directly (no emails/names)
       const tableRes = await supabase
         .from("organization_members")
         .select("id, user_id, role, created_at")
@@ -190,28 +192,41 @@ export function SettingsContent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("navigation.settings")}</h1>
-        <p className="text-muted-foreground">{t("settings.manageOrg")}</p>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <BackToDashboard />
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{t("navigation.settings")}</h2>
+          <p className="text-muted-foreground">{t("settings.manageOrg")}</p>
+        </div>
       </div>
 
       {/* Organization Info */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t("organization.name")}</CardTitle>
+        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+            <Building2 className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <CardTitle className="text-xl">{t("organization.name")}</CardTitle>
+            <CardDescription>{t("settings.orgInfoDesc")}</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
-          <p className="text-lg font-semibold">{organization?.name}</p>
-          <p className="text-sm text-muted-foreground">ID: {organization?.slug}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-lg font-semibold">{organization?.name}</p>
+              <p className="text-sm text-muted-foreground">{t("settings.orgId")}: {organization?.slug}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Team Members */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>{t("organization.team")}</CardTitle>
+            <CardTitle className="text-xl">{t("organization.team")}</CardTitle>
             <CardDescription>
               {members.length} {t("organization.members")}
             </CardDescription>
@@ -220,7 +235,7 @@ export function SettingsContent() {
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
-                  <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                  <UserPlus className="h-4 w-4 me-2" />
                   {t("organization.invite")}
                 </Button>
               </DialogTrigger>
@@ -253,7 +268,7 @@ export function SettingsContent() {
                     </Select>
                   </div>
                   <Button onClick={handleInvite} disabled={inviting || !inviteEmail} className="w-full">
-                    {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {inviting && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                     {t("organization.sendInvite")}
                   </Button>
                 </div>
@@ -262,11 +277,11 @@ export function SettingsContent() {
           )}
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="divide-y">
             {members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between py-3 border-b last:border-0">
+              <div key={member.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     {member.role === "admin" ? (
                       <Shield className="h-4 w-4 text-primary" />
                     ) : (
@@ -274,8 +289,15 @@ export function SettingsContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{member.user_email || member.user_id.slice(0, 8)}</p>
-                    <Badge variant={member.role === "admin" ? "default" : "secondary"} className="text-xs">
+                    <p className="text-sm font-medium leading-none">
+                      {member.user_full_name || member.user_email || member.user_id.slice(0, 8)}
+                    </p>
+                    {member.user_full_name && member.user_email && (
+                      <p className="text-sm text-muted-foreground mt-1" dir="ltr">
+                        {member.user_email}
+                      </p>
+                    )}
+                    <Badge variant={member.role === "admin" ? "default" : "secondary"} className="text-xs mt-1">
                       {t(`organization.${member.role}`)}
                     </Badge>
                   </div>
@@ -314,14 +336,14 @@ export function SettingsContent() {
       {isAdmin && invitations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{t("organization.pendingInvitations")}</CardTitle>
+            <CardTitle className="text-xl">{t("organization.pendingInvitations")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="divide-y">
               {invitations.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                <div key={inv.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
                   <div>
-                    <p className="text-sm font-medium">{inv.email}</p>
+                    <p className="text-sm font-medium" dir="ltr">{inv.email}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="secondary" className="text-xs">
                         {t(`organization.${inv.role}`)}
