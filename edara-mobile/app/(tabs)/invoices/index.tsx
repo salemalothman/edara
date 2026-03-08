@@ -5,6 +5,7 @@ import { Plus, Download, Building2 } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
 import { fetchInvoices } from '../../../lib/services/invoices'
 import { fetchProperties } from '../../../lib/services/properties'
@@ -24,6 +25,7 @@ export default function InvoicesListScreen() {
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency, formatDate } = useFormatter()
+  const { canCreate } = usePermissions()
   const router = useRouter()
 
   const { data: invoices, loading, refetch } = useSupabaseQuery(fetchInvoices)
@@ -179,12 +181,14 @@ export default function InvoicesListScreen() {
         ListEmptyComponent={<EmptyState title={t('invoices.noInvoices')} />}
       />
 
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(tabs)/invoices/add')}
-      >
-        <Plus size={24} color="#fff" />
-      </TouchableOpacity>
+      {canCreate && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/(tabs)/invoices/add')}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       <ExportSheet
         visible={exportVisible}

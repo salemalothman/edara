@@ -668,5 +668,28 @@
   "validation": {
     "error": "خطأ في التحقق",
     "requiredFields": "يرجى ملء جميع الحقول المطلوبة"
+  },
+  "organization": {
+    "name": "مدير العقارات",
+    "team": "أعضاء الفريق",
+    "admin": "مدير",
+    "viewer": "مشاهد"
+  },
+  "onboarding": {
+    "title": "البدء",
+    "subtitle": "قم بإعداد مساحة العمل الخاصة بك لبدء إدارة العقارات",
+    "createOrg": "إنشاء مساحة عمل",
+    "createOrgDesc": "سجل كمدير عقارات",
+    "joinOrg": "الانضمام لمساحة عمل",
+    "joinOrgDesc": "لدي رمز دعوة من فريقي",
+    "propertyManagerName": "اسم مدير العقارات",
+    "orgNamePlaceholder": "مثال: عقارات السلام",
+    "propertyManagerHint": "سيكون هذا اسم شركتك الظاهر لفريقك",
+    "inviteCode": "رمز الدعوة",
+    "inviteCodePlaceholder": "أدخل الرمز من دعوتك"
+  },
+  "permissions": {
+    "viewOnly": "صلاحية العرض فقط",
+    "managerRequired": "مطلوب صلاحية المدير"
   }
 }

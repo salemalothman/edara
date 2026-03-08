@@ -36,9 +36,9 @@ export async function insertContract(contract: {
   return data
 }
 
-export async function uploadContractFile(file: File): Promise<string> {
+export async function uploadContractFile(file: File, orgId: string): Promise<string> {
   const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const path = `contracts/${Date.now()}-${fileName}`
+  const path = `${orgId}/contracts/${Date.now()}-${fileName}`
 
   const arrayBuffer = await file.arrayBuffer()
   const { error } = await supabase.storage
@@ -60,10 +60,11 @@ export async function uploadContractForTenant(
   tenantId: string,
   propertyId: string,
   unitId: string,
-  file: File
+  file: File,
+  orgId: string
 ) {
   // Step 1: Upload the file first
-  const fileUrl = await uploadContractFile(file)
+  const fileUrl = await uploadContractFile(file, orgId)
 
   // Step 2: Only insert DB record after confirmed upload
   const now = new Date().toISOString().split('T')[0]

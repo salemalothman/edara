@@ -5,6 +5,7 @@ import { Plus, AlertTriangle, Clock, CheckCircle } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
 import { fetchMaintenanceRequests } from '../../../lib/services/maintenance'
 import { Card } from '../../../components/ui/Card'
@@ -19,6 +20,7 @@ export default function MaintenanceListScreen() {
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatDate } = useFormatter()
+  const { canCreate } = usePermissions()
   const router = useRouter()
 
   const { data: requests, loading, refetch } = useSupabaseQuery(fetchMaintenanceRequests)
@@ -89,12 +91,14 @@ export default function MaintenanceListScreen() {
         ListEmptyComponent={<EmptyState title={t('maintenance.noRequests')} />}
       />
 
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(tabs)/maintenance/add')}
-      >
-        <Plus size={24} color="#fff" />
-      </TouchableOpacity>
+      {canCreate && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/(tabs)/maintenance/add')}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   )
 }

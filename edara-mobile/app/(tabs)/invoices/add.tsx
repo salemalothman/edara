@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { ChevronDown, Check } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { insertInvoice } from '../../../lib/services/invoices'
 import { fetchTenants } from '../../../lib/services/tenants'
 import { Input } from '../../../components/ui/Input'
@@ -24,7 +25,16 @@ export default function AddInvoiceScreen() {
 
   const { t } = useLanguage()
   const { colors } = useTheme()
+  const { canCreate } = usePermissions()
   const router = useRouter()
+
+  if (!canCreate) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>{t('permissions.adminRequired')}</Text>
+      </View>
+    )
+  }
 
   useEffect(() => {
     fetchTenants().then(setTenants).catch(console.error)

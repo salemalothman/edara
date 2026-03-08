@@ -4,25 +4,30 @@ import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../contexts/auth-context'
 import { LanguageProvider } from '../contexts/language-context'
 import { ThemeProvider, useTheme } from '../contexts/theme-context'
+import { OrganizationProvider, useOrganization } from '../contexts/organization-context'
 import { useRouter, useSegments } from 'expo-router'
 
 function RootLayoutNav() {
   const { user, loading } = useAuth()
+  const { organization, loading: orgLoading } = useOrganization()
   const segments = useSegments()
   const router = useRouter()
   const { colors, theme } = useTheme()
 
   useEffect(() => {
-    if (loading) return
+    if (loading || orgLoading) return
 
     const inAuthGroup = segments[0] === '(auth)'
 
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/login')
-    } else if (user && inAuthGroup) {
+    } else if (user && !organization && !inAuthGroup) {
+      // Authenticated but no org membership — go to onboarding
+      router.replace('/(auth)/onboarding')
+    } else if (user && organization && inAuthGroup) {
       router.replace('/(tabs)')
     }
-  }, [user, loading, segments])
+  }, [user, loading, organization, orgLoading, segments])
 
   return (
     <>
@@ -40,7 +45,9 @@ export default function RootLayout() {
     <AuthProvider>
       <LanguageProvider>
         <ThemeProvider>
-          <RootLayoutNav />
+          <OrganizationProvider>
+            <RootLayoutNav />
+          </OrganizationProvider>
         </ThemeProvider>
       </LanguageProvider>
     </AuthProvider>

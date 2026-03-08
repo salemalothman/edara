@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
@@ -59,6 +60,7 @@ interface InvoiceItem {
 }
 
 export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
+  const { canCreate } = usePermissions()
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("upload")
@@ -295,6 +297,8 @@ export function AddInvoiceDialog({ onSuccess }: { onSuccess?: () => void } = {})
       setIsSubmitting(false)
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {

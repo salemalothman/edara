@@ -5,6 +5,7 @@ import { FileUp, FileText, X } from 'lucide-react-native'
 import * as DocumentPicker from 'expo-document-picker'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { uploadContractForTenant } from '../../../lib/services/contracts'
 import { Button } from '../../../components/ui/Button'
 
@@ -18,7 +19,16 @@ export default function AddContractScreen() {
   const [loading, setLoading] = useState(false)
   const { t } = useLanguage()
   const { colors } = useTheme()
+  const { canCreate } = usePermissions()
   const router = useRouter()
+
+  if (!canCreate) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>{t('permissions.adminRequired')}</Text>
+      </View>
+    )
+  }
 
   const handlePickPdf = async () => {
     try {

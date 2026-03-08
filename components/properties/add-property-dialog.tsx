@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { FormDialog } from "@/components/ui/form-dialog"
 import { useDialogForm } from "@/hooks/use-dialog-form"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { useState } from "react"
 import { insertProperty, uploadPropertyImages } from "@/lib/services/properties"
 
@@ -65,6 +66,7 @@ const initialFormData: PropertyFormData = {
 export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { t } = useLanguage()
   const { toast } = useToast()
+  const { canCreate } = usePermissions()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeTab, setActiveTab] = useState("details")
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
@@ -167,6 +169,8 @@ export function AddPropertyDialog({ onSuccess }: { onSuccess?: () => void } = {}
       setActiveTab("details")
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <FormDialog

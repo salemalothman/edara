@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { insertUnit } from "@/lib/services/units"
 
 const initialFormData = {
@@ -28,6 +29,7 @@ const initialFormData = {
 }
 
 export function AddUnitDialog({ propertyId, onSuccess }: { propertyId: string; onSuccess?: () => void }) {
+  const { canCreate } = usePermissions()
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -66,6 +68,8 @@ export function AddUnitDialog({ propertyId, onSuccess }: { propertyId: string; o
       setIsSubmitting(false)
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

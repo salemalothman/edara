@@ -74,9 +74,9 @@ export async function deleteProperty(id: string) {
   if (error) throw error
 }
 
-export async function uploadPropertyDocument(propertyId: string, file: File): Promise<string> {
+export async function uploadPropertyDocument(propertyId: string, file: File, orgId: string): Promise<string> {
   const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const path = `property-documents/${Date.now()}-${fileName}`
+  const path = `${orgId}/property-documents/${Date.now()}-${fileName}`
 
   const arrayBuffer = await file.arrayBuffer()
   const { error: uploadError } = await supabase.storage
@@ -134,10 +134,10 @@ export async function deletePropertyDocument(propertyId: string, documentUrl: st
   }
 }
 
-export async function uploadPropertyImages(files: File[]): Promise<string[]> {
+export async function uploadPropertyImages(files: File[], orgId: string): Promise<string[]> {
   const urls: string[] = []
   for (const file of files) {
-    const path = `properties/${Date.now()}-${file.name}`
+    const path = `${orgId}/properties/${Date.now()}-${file.name}`
     const { error } = await supabase.storage
       .from('property-images')
       .upload(path, file)

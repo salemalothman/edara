@@ -668,5 +668,28 @@
   "validation": {
     "error": "Validation Error",
     "requiredFields": "Please fill in all required fields"
+  },
+  "organization": {
+    "name": "Property Manager",
+    "team": "Team Members",
+    "admin": "Manager",
+    "viewer": "Viewer"
+  },
+  "onboarding": {
+    "title": "Get Started",
+    "subtitle": "Set up your workspace to begin managing properties",
+    "createOrg": "Create Workspace",
+    "createOrgDesc": "Register as a Property Manager",
+    "joinOrg": "Join Workspace",
+    "joinOrgDesc": "I have an invitation code from my team",
+    "propertyManagerName": "Property Manager Name",
+    "orgNamePlaceholder": "e.g. Al Salam Properties",
+    "propertyManagerHint": "This will be your company name visible to your team",
+    "inviteCode": "Invitation Code",
+    "inviteCodePlaceholder": "Enter the code from your invitation"
+  },
+  "permissions": {
+    "viewOnly": "View-only access",
+    "managerRequired": "Manager access required"
   }
 }

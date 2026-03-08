@@ -5,6 +5,7 @@ import { Plus, Phone, Mail } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
 import { fetchTenants } from '../../../lib/services/tenants'
 import { Card } from '../../../components/ui/Card'
@@ -18,6 +19,7 @@ export default function TenantsListScreen() {
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency } = useFormatter()
+  const { canCreate } = usePermissions()
   const router = useRouter()
 
   const { data: tenants, loading: tenantsLoading, refetch: refetchTenants } = useSupabaseQuery(fetchTenants)
@@ -115,12 +117,14 @@ export default function TenantsListScreen() {
         ListEmptyComponent={<EmptyState title={t('tenants.noTenants')} />}
       />
 
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(tabs)/tenants/add')}
-      >
-        <Plus size={24} color="#fff" />
-      </TouchableOpacity>
+      {canCreate && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/(tabs)/tenants/add')}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   )
 }

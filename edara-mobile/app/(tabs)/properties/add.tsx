@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { Plus, Trash2 } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { insertProperty } from '../../../lib/services/properties'
 import { insertUnit } from '../../../lib/services/units'
 import { Input } from '../../../components/ui/Input'
@@ -33,7 +34,16 @@ export default function AddPropertyScreen() {
 
   const { t } = useLanguage()
   const { colors } = useTheme()
+  const { canCreate } = usePermissions()
   const router = useRouter()
+
+  if (!canCreate) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>{t('permissions.adminRequired')}</Text>
+      </View>
+    )
+  }
 
   const addUnitEntry = () => {
     setUnitEntries(prev => [...prev, emptyUnit()])

@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { insertMaintenanceRequest, uploadMaintenanceImages } from "@/lib/services/maintenance"
 import { fetchProperties } from "@/lib/services/properties"
 import { fetchUnitsByProperty } from "@/lib/services/units"
@@ -41,6 +42,7 @@ interface MaintenanceRequestFormData {
 }
 
 export function AddMaintenanceRequestDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
+  const { canCreate } = usePermissions()
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("details")
@@ -198,6 +200,8 @@ export function AddMaintenanceRequestDialog({ onSuccess }: { onSuccess?: () => v
       setActiveTab("details")
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

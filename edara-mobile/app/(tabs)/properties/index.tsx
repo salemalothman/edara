@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus, MapPin } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
 import { fetchProperties } from '../../../lib/services/properties'
 import { Card } from '../../../components/ui/Card'
@@ -17,6 +18,7 @@ export default function PropertiesListScreen() {
   const [filter, setFilter] = useState('all')
   const { t } = useLanguage()
   const { colors } = useTheme()
+  const { canCreate } = usePermissions()
   const router = useRouter()
 
   const { data: properties, loading, refetch } = useSupabaseQuery(fetchProperties)
@@ -93,12 +95,14 @@ export default function PropertiesListScreen() {
         ListEmptyComponent={<EmptyState title={t('properties.noProperties')} />}
       />
 
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(tabs)/properties/add')}
-      >
-        <Plus size={24} color="#fff" />
-      </TouchableOpacity>
+      {canCreate && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/(tabs)/properties/add')}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   )
 }

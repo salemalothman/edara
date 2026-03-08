@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { uploadContractForTenant } from "@/lib/services/contracts"
 import { fetchTenants } from "@/lib/services/tenants"
@@ -30,6 +31,7 @@ interface AddContractDialogProps {
 }
 
 export function AddContractDialog({ onSuccess, defaultTenantId, open: controlledOpen, onOpenChange, trigger }: AddContractDialogProps = {}) {
+  const { canCreate } = usePermissions()
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
@@ -118,6 +120,8 @@ export function AddContractDialog({ onSuccess, defaultTenantId, open: controlled
       setIsSubmitting(false)
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {

@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
 import { useFormatter } from '../../../hooks/use-formatter'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { useSupabaseQuery } from '../../../hooks/use-supabase-query'
 import { fetchExpenses, fetchApprovedMaintenanceCosts } from '../../../lib/services/expenses'
 import { Card } from '../../../components/ui/Card'
@@ -19,6 +20,7 @@ export default function ExpensesListScreen() {
   const { t } = useLanguage()
   const { colors } = useTheme()
   const { formatCurrency, formatDate } = useFormatter()
+  const { canCreate } = usePermissions()
   const router = useRouter()
 
   const { data: manualExpenses, loading: expLoading, refetch: refetchExp } = useSupabaseQuery(fetchExpenses)
@@ -138,12 +140,14 @@ export default function ExpensesListScreen() {
         ListEmptyComponent={<EmptyState title={t('expenses.noExpenses')} />}
       />
 
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(tabs)/expenses/add')}
-      >
-        <Plus size={24} color="#fff" />
-      </TouchableOpacity>
+      {canCreate && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/(tabs)/expenses/add')}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   )
 }

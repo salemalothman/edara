@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { ChevronDown, Check } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { insertExpense } from '../../../lib/services/expenses'
 import { fetchProperties } from '../../../lib/services/properties'
 import { Input } from '../../../components/ui/Input'
@@ -24,7 +25,16 @@ export default function AddExpenseScreen() {
 
   const { t } = useLanguage()
   const { colors } = useTheme()
+  const { canCreate } = usePermissions()
   const router = useRouter()
+
+  if (!canCreate) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>{t('permissions.adminRequired')}</Text>
+      </View>
+    )
+  }
 
   const categories = ['guard', 'cleaning', 'utilities', 'repairs', 'insurance', 'management', 'other']
 

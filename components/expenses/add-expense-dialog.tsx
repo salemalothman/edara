@@ -17,11 +17,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { insertExpense } from "@/lib/services/expenses"
 import { fetchProperties } from "@/lib/services/properties"
 import { useSupabaseQuery } from "@/hooks/use-supabase-query"
 
 export function AddExpenseDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
+  const { canCreate } = usePermissions()
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { t } = useLanguage()
@@ -88,6 +90,8 @@ export function AddExpenseDialog({ onSuccess }: { onSuccess?: () => void } = {})
       setIsSubmitting(false)
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

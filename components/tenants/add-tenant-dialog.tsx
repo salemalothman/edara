@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
 import { insertTenant } from "@/lib/services/tenants"
 import { fetchProperties } from "@/lib/services/properties"
 import { fetchUnitsByProperty } from "@/lib/services/units"
@@ -44,6 +45,7 @@ interface AddTenantDialogProps {
 }
 
 export function AddTenantDialog({ onSuccess, open: controlledOpen, onOpenChange }: AddTenantDialogProps = {}) {
+  const { canCreate } = usePermissions()
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
@@ -116,6 +118,8 @@ export function AddTenantDialog({ onSuccess, open: controlledOpen, onOpenChange 
       setIsSubmitting(false)
     }
   }
+
+  if (!canCreate) return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

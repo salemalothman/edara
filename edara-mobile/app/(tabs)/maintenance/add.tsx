@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { Camera, ChevronDown, Check } from 'lucide-react-native'
 import { useLanguage } from '../../../contexts/language-context'
 import { useTheme } from '../../../contexts/theme-context'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { insertMaintenanceRequest, uploadMaintenanceImage } from '../../../lib/services/maintenance'
 import { fetchProperties } from '../../../lib/services/properties'
 import { fetchUnitsByProperty } from '../../../lib/services/units'
@@ -32,7 +33,16 @@ export default function AddMaintenanceScreen() {
 
   const { t } = useLanguage()
   const { colors } = useTheme()
+  const { canCreate } = usePermissions()
   const router = useRouter()
+
+  if (!canCreate) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>{t('permissions.adminRequired')}</Text>
+      </View>
+    )
+  }
 
   const categories = ['plumbing', 'electrical', 'hvac', 'appliance', 'structural', 'pest', 'other']
   const priorities = ['low', 'medium', 'high']

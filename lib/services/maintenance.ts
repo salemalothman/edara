@@ -57,10 +57,10 @@ export async function deleteMaintenanceRequest(id: string) {
   if (error) throw error
 }
 
-export async function uploadMaintenanceImages(files: File[]): Promise<string[]> {
+export async function uploadMaintenanceImages(files: File[], orgId: string): Promise<string[]> {
   const urls: string[] = []
   for (const file of files) {
-    const path = `maintenance/${Date.now()}-${file.name}`
+    const path = `${orgId}/maintenance/${Date.now()}-${file.name}`
     const { error } = await supabase.storage
       .from('property-images')
       .upload(path, file)

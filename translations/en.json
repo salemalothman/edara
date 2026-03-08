@@ -5,7 +5,14 @@
     "email": "Email",
     "password": "Password",
     "logOut": "Log out",
-    "propertyManager": "Property Manager"
+    "propertyManager": "Property Manager",
+    "signUp": "Sign Up",
+    "signUpDesc": "Create your account to get started",
+    "fullName": "Full Name",
+    "accountCreated": "Account Created!",
+    "checkEmail": "Check your email for a confirmation link, then sign in.",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?"
   },
   "common": {
     "dashboard": "Dashboard",
@@ -35,6 +42,7 @@
     "remove": "Remove",
     "error": "Error",
     "success": "Success",
+    "copied": "Copied!",
     "all": "All",
     "allProperties": "All Properties",
     "filterByProperty": "Filter by Property",
@@ -59,7 +67,8 @@
     "expenses": "Expenses",
     "financing": "Financing",
     "reports": "Reports",
-    "properties": "Properties"
+    "properties": "Properties",
+    "settings": "Settings"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -756,5 +765,41 @@
     "periodLockedDesc": "This period is closed. Records are read-only.",
     "currentPeriod": "Current Period",
     "lockedPeriod": "Closed Period"
+  },
+  "organization": {
+    "name": "Property Manager",
+    "team": "Team Members",
+    "members": "members",
+    "invite": "Invite Employee",
+    "inviteDesc": "Send an invitation for an employee to join your workspace",
+    "sendInvite": "Send Invitation",
+    "role": "Role",
+    "admin": "Manager",
+    "viewer": "Viewer",
+    "removeMember": "Remove Member",
+    "pendingInvitations": "Pending Invitations",
+    "expires": "Expires",
+    "copyToken": "Copy invite code",
+    "inviteSent": "Invitation sent"
+  },
+  "onboarding": {
+    "title": "Get Started",
+    "subtitle": "Set up your workspace to begin managing properties",
+    "createOrg": "Create Workspace",
+    "createOrgDesc": "Register as a Property Manager",
+    "joinOrg": "Join Workspace",
+    "joinOrgDesc": "I have an invitation code from my team",
+    "propertyManagerName": "Property Manager Name",
+    "orgNamePlaceholder": "e.g. Al Salam Properties",
+    "propertyManagerHint": "This will be your company name visible to your team",
+    "inviteCode": "Invitation Code",
+    "inviteCodePlaceholder": "Enter the code from your invitation"
+  },
+  "permissions": {
+    "viewOnly": "View-only access",
+    "managerRequired": "Manager access required"
+  },
+  "settings": {
+    "manageOrg": "Manage your workspace and team members"
   }
 }

@@ -5,7 +5,14 @@
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
     "logOut": "تسجيل الخروج",
-    "propertyManager": "مدير العقارات"
+    "propertyManager": "مدير العقارات",
+    "signUp": "إنشاء حساب",
+    "signUpDesc": "أنشئ حسابك للبدء",
+    "fullName": "الاسم الكامل",
+    "accountCreated": "تم إنشاء الحساب!",
+    "checkEmail": "تحقق من بريدك الإلكتروني للحصول على رابط التأكيد، ثم سجل الدخول.",
+    "noAccount": "ليس لديك حساب؟",
+    "haveAccount": "لديك حساب بالفعل؟"
   },
   "common": {
     "dashboard": "لوحة التحكم",
@@ -35,6 +42,7 @@
     "remove": "إزالة",
     "error": "خطأ",
     "success": "نجاح",
+    "copied": "تم النسخ!",
     "all": "الكل",
     "allProperties": "جميع العقارات",
     "filterByProperty": "تصفية حسب العقار",
@@ -59,7 +67,8 @@
     "expenses": "المصروفات",
     "financing": "التمويل",
     "reports": "التقارير",
-    "properties": "العقارات"
+    "properties": "العقارات",
+    "settings": "الإعدادات"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -757,5 +766,41 @@
     "periodLockedDesc": "هذه الفترة مغلقة. السجلات للقراءة فقط.",
     "currentPeriod": "الفترة الحالية",
     "lockedPeriod": "فترة مغلقة"
+  },
+  "organization": {
+    "name": "مدير العقارات",
+    "team": "أعضاء الفريق",
+    "members": "أعضاء",
+    "invite": "دعوة موظف",
+    "inviteDesc": "أرسل دعوة لموظف للانضمام إلى مساحة العمل",
+    "sendInvite": "إرسال الدعوة",
+    "role": "الدور",
+    "admin": "مدير",
+    "viewer": "مشاهد",
+    "removeMember": "إزالة العضو",
+    "pendingInvitations": "الدعوات المعلقة",
+    "expires": "تنتهي",
+    "copyToken": "نسخ رمز الدعوة",
+    "inviteSent": "تم إرسال الدعوة"
+  },
+  "onboarding": {
+    "title": "البدء",
+    "subtitle": "قم بإعداد مساحة العمل الخاصة بك لبدء إدارة العقارات",
+    "createOrg": "إنشاء مساحة عمل",
+    "createOrgDesc": "سجل كمدير عقارات",
+    "joinOrg": "الانضمام لمساحة عمل",
+    "joinOrgDesc": "لدي رمز دعوة من فريقي",
+    "propertyManagerName": "اسم مدير العقارات",
+    "orgNamePlaceholder": "مثال: عقارات السلام",
+    "propertyManagerHint": "سيكون هذا اسم شركتك الظاهر لفريقك",
+    "inviteCode": "رمز الدعوة",
+    "inviteCodePlaceholder": "أدخل الرمز من دعوتك"
+  },
+  "permissions": {
+    "viewOnly": "صلاحية العرض فقط",
+    "managerRequired": "مطلوب صلاحية المدير"
+  },
+  "settings": {
+    "manageOrg": "إدارة مساحة العمل وأعضاء الفريق"
   }
 }

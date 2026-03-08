@@ -36,9 +36,9 @@ export async function insertContract(contract: {
   return data
 }
 
-export async function uploadContractFile(uri: string, fileName: string): Promise<string> {
+export async function uploadContractFile(uri: string, fileName: string, orgId: string): Promise<string> {
   const sanitizedName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const path = `contracts/${Date.now()}-${sanitizedName}`
+  const path = `${orgId}/contracts/${Date.now()}-${sanitizedName}`
 
   const response = await fetch(uri)
   const arrayBuffer = await response.arrayBuffer()
@@ -57,8 +57,8 @@ export async function uploadContractFile(uri: string, fileName: string): Promise
   return data.publicUrl
 }
 
-export async function uploadContractForTenant(tenantId: string, propertyId: string, unitId: string, fileUri: string, fileName: string) {
-  const fileUrl = await uploadContractFile(fileUri, fileName)
+export async function uploadContractForTenant(tenantId: string, propertyId: string, unitId: string, fileUri: string, fileName: string, orgId: string) {
+  const fileUrl = await uploadContractFile(fileUri, fileName, orgId)
 
   const now = new Date().toISOString().split('T')[0]
   const contractData: Record<string, any> = {

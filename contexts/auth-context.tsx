@@ -10,10 +10,14 @@ type AuthContextType = {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error?: string }>
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+// Pages that don't require authentication
+const PUBLIC_PATHS = ["/login", "/signup"]
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -42,17 +46,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Redirect logic
   useEffect(() => {
     if (loading) return
-    const isLoginPage = pathname === "/login"
+    const isPublicPage = PUBLIC_PATHS.includes(pathname)
 
-    if (!session && !isLoginPage) {
+    if (!session && !isPublicPage) {
       router.replace("/login")
-    } else if (session && isLoginPage) {
+    } else if (session && isPublicPage) {
       router.replace("/")
     }
   }, [session, loading, pathname, router])
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error: error.message }
+    return {}
+  }
+
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+      },
+    })
     if (error) return { error: error.message }
     return {}
   }
@@ -71,8 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  // Don't render protected content if not authenticated (unless on login page)
-  if (!session && pathname !== "/login") {
+  // Don't render protected content if not authenticated (unless on public page)
+  if (!session && !PUBLIC_PATHS.includes(pathname)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -81,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   )

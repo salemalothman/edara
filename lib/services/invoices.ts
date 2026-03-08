@@ -170,8 +170,8 @@ export async function generateMonthlyInvoices() {
   return invoicesToCreate.length
 }
 
-export async function uploadInvoiceFile(file: File): Promise<string> {
-  const path = `invoices/${Date.now()}-${file.name}`
+export async function uploadInvoiceFile(file: File, orgId: string): Promise<string> {
+  const path = `${orgId}/invoices/${Date.now()}-${file.name}`
   const { error } = await supabase.storage
     .from('documents')
     .upload(path, file)
