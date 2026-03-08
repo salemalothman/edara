@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter, usePathname } from "next/navigation"
@@ -30,10 +30,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [role, setRole] = useState<"admin" | "viewer" | null>(null)
   const [loading, setLoading] = useState(true)
+  const initialLoadDone = useRef(false)
   const router = useRouter()
   const pathname = usePathname()
 
-  const fetchMembership = useCallback(async () => {
+  const fetchMembership = useCallback(async (isInitialLoad = false) => {
     if (!user || !session) {
       setOrganization(null)
       setRole(null)
@@ -41,7 +42,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    setLoading(true)
+    // Only show full-page spinner on initial load, not on refetches
+    if (isInitialLoad) {
+      setLoading(true)
+    }
 
     const { data, error } = await supabase.rpc("get_my_membership")
 
@@ -61,22 +65,16 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     setOrganization({ id: row.org_id, name: row.org_name, slug: row.org_slug })
     setRole(row.role as "admin" | "viewer")
     setLoading(false)
+    initialLoadDone.current = true
   }, [user, session, pathname, router])
 
-  // Refetch on auth changes
+  // Initial fetch on auth changes
   useEffect(() => {
-    fetchMembership()
+    fetchMembership(!initialLoadDone.current)
   }, [user, session])
 
-  // Refetch when navigating to a protected page (ensures fresh org data)
-  useEffect(() => {
-    if (user && session && !PUBLIC_PATHS.includes(pathname)) {
-      fetchMembership()
-    }
-  }, [pathname])
-
   const refetchOrg = useCallback(async () => {
-    await fetchMembership()
+    await fetchMembership(false)
   }, [fetchMembership])
 
   // Don't block rendering on public pages
@@ -90,7 +88,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  // Show loading while checking membership
+  // Show loading while checking membership (initial load only)
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

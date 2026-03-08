@@ -48,7 +48,7 @@ type Invitation = {
 
 export function SettingsContent() {
   const { t } = useLanguage()
-  const { organization, orgId, isAdmin, refetchOrg } = useOrganization()
+  const { organization, orgId, isAdmin } = useOrganization()
   const { canEdit } = usePermissions()
   const [members, setMembers] = useState<Member[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
@@ -96,15 +96,8 @@ export function SettingsContent() {
     setLoading(false)
   }
 
-  // Refresh org context + members on mount
   useEffect(() => {
-    refetchOrg()
-  }, [])
-
-  useEffect(() => {
-    if (orgId) {
-      fetchData()
-    }
+    fetchData()
   }, [orgId])
 
   const handleInvite = async () => {
